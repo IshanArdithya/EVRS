@@ -1,103 +1,182 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import type React from "react";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Shield } from "lucide-react";
+
+export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // test login
+    if (email && password) {
+      router.push("/dashboard");
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
+      <div className="grid lg:grid-cols-2 min-h-screen">
+        {/* left side - login form */}
+        <div className="flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-md space-y-6">
+            {/* header */}
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <Shield className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold text-primary">EVRS</h1>
+              </div>
+              <p className="text-muted-foreground">
+                Secure access to your vaccination records
+              </p>
+            </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {/* login card */}
+            <Card className="border-primary/20 shadow-lg">
+              <CardHeader className="space-y-1 text-center">
+                <CardTitle className="text-xl text-primary">
+                  Patient Login
+                </CardTitle>
+                <CardDescription>
+                  Enter your credentials to access your health records
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="patient@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="border-primary/20 focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="border-primary/20 focus:border-primary pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-600"
+                  >
+                    Sign In
+                  </Button>
+                </form>
+
+                <div className="mt-6 space-y-4">
+                  <div className="text-center">
+                    <Button variant="link" className="text-primary text-sm">
+                      Forgot your password?
+                    </Button>
+                  </div>
+
+                  <div className="text-center text-sm text-muted-foreground">
+                    Need help accessing your account?{" "}
+                    <Button variant="link" className="text-primary p-0 h-auto">
+                      Contact Support
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* footer */}
+            <div className="text-center text-xs text-muted-foreground space-y-1">
+              <p>This is a secure GOV-approved portal</p>
+              <p>Your data is protected and encrypted</p>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* right side - img/illustration */}
+        <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 p-12">
+          <div className="text-center space-y-6 max-w-lg">
+            {/* medical illustration placeholder */}
+            <div className="w-full h-96 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
+              <div className="text-center space-y-4">
+                <Shield className="h-24 w-24 text-primary mx-auto" />
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-primary">
+                    Secure Health Records
+                  </h2>
+                  <p className="text-primary-700">
+                    Access your vaccination history anytime, anywhere
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* features */}
+            <div className="grid grid-cols-1 gap-4 text-left">
+              <div className="flex items-center space-x-3 text-primary-700">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span className="text-sm">
+                  Instant access to vaccination records
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary-700">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span className="text-sm">
+                  Generate QR codes for healthcare providers
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary-700">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span className="text-sm">GOV-approved security standards</span>
+              </div>
+              <div className="flex items-center space-x-3 text-primary-700">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                <span className="text-sm">24/7 support and assistance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
