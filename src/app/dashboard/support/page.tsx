@@ -30,7 +30,9 @@ export default function SupportPage() {
       <div className="space-y-6">
         {/* header */}
         <div>
-          <h1 className="text-2xl font-bold text-primary">Help & Support</h1>
+          <h1 className="text-2xl font-bold text-primary-DEFAULT">
+            Help & Support
+          </h1>
           <p className="text-muted-foreground">
             Get assistance with your health portal and vaccination records
           </p>
@@ -50,7 +52,7 @@ export default function SupportPage() {
               non-emergency health record access only.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="destructive" size="sm">
+              <Button variant="destructive" size="sm" className="bg-red-700">
                 <Phone className="mr-2 h-4 w-4" />
                 Call 1990
               </Button>
@@ -78,7 +80,7 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <Phone className="h-5 w-5 text-primary" />
+                  <Phone className="h-5 w-5 text-primary-DEFAULT" />
                   <div>
                     <h4 className="font-medium">Phone Support</h4>
                     <p className="text-sm text-muted-foreground">
@@ -91,7 +93,7 @@ export default function SupportPage() {
                 </div>
 
                 <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <Mail className="h-5 w-5 text-primary" />
+                  <Mail className="h-5 w-5 text-primary-DEFAULT" />
                   <div>
                     <h4 className="font-medium">Email Support</h4>
                     <p className="text-sm text-muted-foreground">
@@ -104,7 +106,7 @@ export default function SupportPage() {
                 </div>
 
                 <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <MessageCircle className="h-5 w-5 text-primary" />
+                  <MessageCircle className="h-5 w-5 text-primary-DEFAULT" />
                   <div>
                     <h4 className="font-medium">Live Chat</h4>
                     <p className="text-sm text-muted-foreground">
@@ -126,7 +128,7 @@ export default function SupportPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                    <MapPin className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                     <div>
                       <h4 className="font-medium">MOH</h4>
                       <p className="text-sm text-muted-foreground">
@@ -228,7 +230,7 @@ export default function SupportPage() {
               ].map((faq, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <h4 className="font-medium flex items-center mb-2">
-                    <HelpCircle className="mr-2 h-4 w-4 text-primary" />
+                    <HelpCircle className="mr-2 h-4 w-4 text-primary-DEFAULT" />
                     {faq.question}
                   </h4>
                   <p className="text-sm text-muted-foreground pl-6">

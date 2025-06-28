@@ -75,7 +75,7 @@ export default function VaccinationsPage() {
         {/* header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-primary">
+            <h1 className="text-2xl font-bold text-primary-DEFAULT">
               Vaccination Records
             </h1>
             <p className="text-muted-foreground">
@@ -115,7 +115,7 @@ export default function VaccinationsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-2xl font-bold text-primary-DEFAULT">
                   {vaccinations.length}
                 </div>
                 <p className="text-sm text-muted-foreground">

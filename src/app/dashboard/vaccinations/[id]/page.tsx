@@ -75,7 +75,7 @@ export default function VaccinationDetailPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-primary">
+              <h1 className="text-2xl font-bold text-primary-DEFAULT">
                 {vaccinationDetails.name}
               </h1>
               <p className="text-muted-foreground">

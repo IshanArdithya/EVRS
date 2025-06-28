@@ -20,7 +20,7 @@ export default function ProfilePage() {
       <div className="space-y-6">
         {/* header */}
         <div>
-          <h1 className="text-2xl font-bold text-primary">
+          <h1 className="text-2xl font-bold text-primary-DEFAULT">
             Profile Management
           </h1>
           <p className="text-muted-foreground">
@@ -37,7 +37,7 @@ export default function ProfilePage() {
             <CardContent className="text-center space-y-4">
               <div className="relative inline-block">
                 <Avatar className="h-24 w-24">
-                  <AvatarFallback className="bg-primary text-white text-2xl">
+                  <AvatarFallback className="bg-primary-DEFAULT text-white text-2xl">
                     JD
                   </AvatarFallback>
                 </Avatar>

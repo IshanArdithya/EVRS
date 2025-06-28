@@ -23,7 +23,9 @@ export default function PrivacyPage() {
       <div className="space-y-6">
         {/* header */}
         <div>
-          <h1 className="text-2xl font-bold text-primary">Privacy Policy</h1>
+          <h1 className="text-2xl font-bold text-primary-DEFAULT">
+            Privacy Policy
+          </h1>
           <p className="text-muted-foreground">
             How we protect and use your personal health information
           </p>
@@ -34,10 +36,10 @@ export default function PrivacyPage() {
         </div>
 
         {/* privacy overview */}
-        <Card className="border-primary/20">
+        <Card className="border-primary-DEFAULT/20">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-primary" />
+              <Shield className="mr-2 h-5 w-5 text-primary-DEFAULT" />
               Your Privacy is Protected
             </CardTitle>
             <CardDescription>
@@ -48,21 +50,21 @@ export default function PrivacyPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 border rounded-lg">
-                <Lock className="h-8 w-8 text-primary mx-auto mb-2" />
+                <Lock className="h-8 w-8 text-primary-DEFAULT mx-auto mb-2" />
                 <h3 className="font-medium">Encrypted Storage</h3>
                 <p className="text-sm text-muted-foreground">
                   All data encrypted at rest and in transit
                 </p>
               </div>
               <div className="text-center p-4 border rounded-lg">
-                <UserCheck className="h-8 w-8 text-primary mx-auto mb-2" />
+                <UserCheck className="h-8 w-8 text-primary-DEFAULT mx-auto mb-2" />
                 <h3 className="font-medium">Access Control</h3>
                 <p className="text-sm text-muted-foreground">
                   Strict authentication and authorization
                 </p>
               </div>
               <div className="text-center p-4 border rounded-lg">
-                <Eye className="h-8 w-8 text-primary mx-auto mb-2" />
+                <Eye className="h-8 w-8 text-primary-DEFAULT mx-auto mb-2" />
                 <h3 className="font-medium">Audit Logging</h3>
                 <p className="text-sm text-muted-foreground">
                   All access is monitored and logged
@@ -80,7 +82,7 @@ export default function PrivacyPage() {
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
-                <Database className="h-5 w-5 text-primary mt-0.5" />
+                <Database className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                 <div>
                   <h4 className="font-medium">Personal Information</h4>
                   <p className="text-sm text-muted-foreground">
@@ -91,7 +93,7 @@ export default function PrivacyPage() {
               </div>
 
               <div className="flex items-start space-x-3">
-                <Database className="h-5 w-5 text-primary mt-0.5" />
+                <Database className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                 <div>
                   <h4 className="font-medium">Medical Information</h4>
                   <p className="text-sm text-muted-foreground">
@@ -103,7 +105,7 @@ export default function PrivacyPage() {
               </div>
 
               <div className="flex items-start space-x-3">
-                <Database className="h-5 w-5 text-primary mt-0.5" />
+                <Database className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                 <div>
                   <h4 className="font-medium">Technical Information</h4>
                   <p className="text-sm text-muted-foreground">
@@ -159,7 +161,7 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-4 border-l-4 border-primary bg-primary/5">
+              <div className="p-4 border-l-4 border-primary-DEFAULT bg-primary-DEFAULT/5">
                 <h4 className="font-medium">Authorized Healthcare Providers</h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   Your GP, specialists, and other healthcare professionals

@@ -73,7 +73,7 @@ export default function NewVaccinationPage() {
       <div className="space-y-6">
         {/* header */}
         <div>
-          <h1 className="text-2xl font-bold text-primary">
+          <h1 className="text-2xl font-bold text-primary-DEFAULT">
             New Vaccination Request
           </h1>
           <p className="text-muted-foreground">
@@ -185,7 +185,7 @@ export default function NewVaccinationPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-primary" />
+              <Shield className="mr-2 h-5 w-5 text-primary-DEFAULT" />
               Instructions for Vaccination
             </CardTitle>
           </CardHeader>
@@ -201,7 +201,7 @@ export default function NewVaccinationPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-primary">
+                  <h4 className="font-medium text-primary-DEFAULT">
                     Step-by-Step Process:
                   </h4>
                   <ol className="text-sm space-y-2 list-decimal list-inside">
@@ -219,7 +219,9 @@ export default function NewVaccinationPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="font-medium text-primary">Important Notes:</h4>
+                  <h4 className="font-medium text-primary-DEFAULT">
+                    Important Notes:
+                  </h4>
                   <ul className="text-sm space-y-2 list-disc list-inside">
                     <li>QR codes expire after 5 minutes for security</li>
                     <li>
