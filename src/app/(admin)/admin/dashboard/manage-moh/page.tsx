@@ -2,28 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import type React from "react";
-
-import { useState, useEffect } from "react";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -33,6 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -47,26 +38,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Building2,
   Plus,
-  Copy,
-  Check,
-  Loader2,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  Search,
-  ChevronsUpDown,
-  Hospital,
+  Eye,
   Edit,
   Trash2,
-  Eye,
+  Copy,
+  Check,
+  ChevronsUpDown,
+  Search,
+  Filter,
+  Building2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Province and District data
-const provinceDistrictData = {
+const provincesData = {
   Western: ["Colombo", "Gampaha", "Kalutara"],
   Central: ["Kandy", "Matale", "Nuwara Eliya"],
   Southern: ["Galle", "Matara", "Hambantota"],
@@ -78,184 +67,127 @@ const provinceDistrictData = {
   Sabaragamuwa: ["Ratnapura", "Kegalle"],
 };
 
-const provinces = Object.keys(provinceDistrictData);
+const provinces = Object.keys(provincesData);
 
 // mock data
-const allHospitalsData = [
+const allMohAccounts = [
   {
-    id: "H001",
-    name: "Colombo General Hospital",
-    email: "admin@cgh.lk",
+    id: "MOH001",
+    name: "MOH-Colombo",
+    contactNo: "+94 77 123 4567",
+    email: "colombo@moh.gov.lk",
     province: "Western",
     district: "Colombo",
     status: "Active",
     createdDate: "2024-01-15",
   },
   {
-    id: "H002",
-    name: "Lady Ridgeway Hospital",
-    email: "admin@lrh.lk",
+    id: "MOH002",
+    name: "MOH-Gampaha",
+    contactNo: "+94 71 234 5678",
+    email: "gampaha@moh.gov.lk",
     province: "Western",
-    district: "Colombo",
+    district: "Gampaha",
     status: "Active",
     createdDate: "2024-01-20",
   },
   {
-    id: "H003",
-    name: "National Hospital of Sri Lanka",
-    email: "admin@nhsl.lk",
+    id: "MOH003",
+    name: "MOH-Kalutara",
+    contactNo: "+94 76 345 6789",
+    email: "kalutara@moh.gov.lk",
     province: "Western",
-    district: "Colombo",
-    status: "Active",
-    createdDate: "2024-01-25",
-  },
-  {
-    id: "H004",
-    name: "District General Hospital Gampaha",
-    email: "admin@dghg.lk",
-    province: "Western",
-    district: "Gampaha",
-    status: "Active",
+    district: "Kalutara",
+    status: "Inactive",
     createdDate: "2024-02-01",
   },
   {
-    id: "H005",
-    name: "Base Hospital Negombo",
-    email: "admin@bhn.lk",
-    province: "Western",
-    district: "Gampaha",
-    status: "Inactive",
-    createdDate: "2024-02-05",
-  },
-  {
-    id: "H006",
-    name: "Base Hospital Kalutara",
-    email: "admin@bhk.lk",
-    province: "Western",
-    district: "Kalutara",
+    id: "MOH004",
+    name: "MOH-Kandy",
+    contactNo: "+94 78 456 7890",
+    email: "kandy@moh.gov.lk",
+    province: "Central",
+    district: "Kandy",
     status: "Active",
     createdDate: "2024-02-10",
   },
   {
-    id: "H007",
-    name: "District General Hospital Kalutara",
-    email: "admin@dghk.lk",
-    province: "Western",
-    district: "Kalutara",
+    id: "MOH005",
+    name: "MOH-Matale",
+    contactNo: "+94 75 567 8901",
+    email: "matale@moh.gov.lk",
+    province: "Central",
+    district: "Matale",
     status: "Active",
     createdDate: "2024-02-15",
   },
   {
-    id: "H008",
-    name: "Teaching Hospital Kandy",
-    email: "admin@thk.lk",
+    id: "MOH006",
+    name: "MOH-Nuwara Eliya",
+    contactNo: "+94 77 678 9012",
+    email: "nuwaraeliya@moh.gov.lk",
     province: "Central",
-    district: "Kandy",
+    district: "Nuwara Eliya",
     status: "Active",
     createdDate: "2024-02-20",
   },
   {
-    id: "H009",
-    name: "Peradeniya Teaching Hospital",
-    email: "admin@pth.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
-    createdDate: "2024-02-25",
-  },
-  {
-    id: "H010",
-    name: "Sirimavo Bandaranaike Specialized Children's Hospital",
-    email: "admin@sbsch.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
+    id: "MOH007",
+    name: "MOH-Galle",
+    contactNo: "+94 71 789 0123",
+    email: "galle@moh.gov.lk",
+    province: "Southern",
+    district: "Galle",
+    status: "Inactive",
     createdDate: "2024-03-01",
   },
   {
-    id: "H011",
-    name: "District General Hospital Matale",
-    email: "admin@dghm.lk",
-    province: "Central",
-    district: "Matale",
+    id: "MOH008",
+    name: "MOH-Matara",
+    contactNo: "+94 76 890 1234",
+    email: "matara@moh.gov.lk",
+    province: "Southern",
+    district: "Matara",
     status: "Active",
     createdDate: "2024-03-05",
   },
   {
-    id: "H012",
-    name: "Base Hospital Nuwara Eliya",
-    email: "admin@bhne.lk",
-    province: "Central",
-    district: "Nuwara Eliya",
-    status: "Inactive",
-    createdDate: "2024-03-10",
-  },
-  {
-    id: "H013",
-    name: "Teaching Hospital Karapitiya",
-    email: "admin@thkar.lk",
-    province: "Southern",
-    district: "Galle",
-    status: "Active",
-    createdDate: "2024-03-15",
-  },
-  {
-    id: "H014",
-    name: "Base Hospital Galle",
-    email: "admin@bhg.lk",
-    province: "Southern",
-    district: "Galle",
-    status: "Active",
-    createdDate: "2024-03-20",
-  },
-  {
-    id: "H015",
-    name: "Base Hospital Matara",
-    email: "admin@bhm.lk",
-    province: "Southern",
-    district: "Matara",
-    status: "Active",
-    createdDate: "2024-03-25",
-  },
-  {
-    id: "H016",
-    name: "District General Hospital Hambantota",
-    email: "admin@dghh.lk",
-    province: "Southern",
-    district: "Hambantota",
-    status: "Active",
-    createdDate: "2024-04-01",
-  },
-  {
-    id: "H017",
-    name: "Teaching Hospital Jaffna",
-    email: "admin@thj.lk",
+    id: "MOH009",
+    name: "MOH-Jaffna",
+    contactNo: "+94 78 901 2345",
+    email: "jaffna@moh.gov.lk",
     province: "Northern",
     district: "Jaffna",
     status: "Active",
-    createdDate: "2024-04-05",
+    createdDate: "2024-03-10",
   },
   {
-    id: "H018",
-    name: "Base Hospital Batticaloa",
-    email: "admin@bhb.lk",
+    id: "MOH010",
+    name: "MOH-Batticaloa",
+    contactNo: "+94 75 012 3456",
+    email: "batticaloa@moh.gov.lk",
     province: "Eastern",
     district: "Batticaloa",
     status: "Active",
-    createdDate: "2024-04-10",
+    createdDate: "2024-03-15",
   },
 ];
 
-export default function ManageHospitals() {
-  const [hospitals, setHospitals] = useState<any[]>([]);
+export default function ManageMOHPage() {
+  const [mohAccounts, setMohAccounts] = useState<typeof allMohAccounts>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [newAccount, setNewAccount] = useState({
+    name: "",
+    contactNo: "",
+    email: "",
+    province: "",
+    district: "",
+  });
+  const [createdAccount, setCreatedAccount] = useState<any>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [copiedField, setCopiedField] = useState("");
-  const [generatedPassword, setGeneratedPassword] = useState("");
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedHospital, setSelectedHospital] = useState<any>(null);
 
   // filter states
   const [filterProvince, setFilterProvince] = useState("");
@@ -271,48 +203,36 @@ export default function ManageHospitals() {
   const [openFormProvince, setOpenFormProvince] = useState(false);
   const [openFormDistrict, setOpenFormDistrict] = useState(false);
 
-  const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    email: "",
-    province: "",
-    district: "",
-  });
-  const { toast } = useToast();
-
   const itemsPerPage = 5;
-  const totalPages = Math.ceil(hospitals.length / itemsPerPage);
+  const totalPages = Math.ceil(mohAccounts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentHospitals = hospitals.slice(startIndex, endIndex);
+  const currentAccounts = mohAccounts.slice(startIndex, endIndex);
 
   // get districts for selected province (filter)
   const getFilterDistricts = () => {
     return filterProvince
-      ? provinceDistrictData[
-          filterProvince as keyof typeof provinceDistrictData
-        ] || []
+      ? provincesData[filterProvince as keyof typeof provincesData] || []
       : [];
   };
 
   // get districts for selected province (form)
   const getFormDistricts = () => {
-    return formData.province
-      ? provinceDistrictData[
-          formData.province as keyof typeof provinceDistrictData
-        ] || []
+    return newAccount.province
+      ? provincesData[newAccount.province as keyof typeof provincesData] || []
       : [];
   };
 
-  // generate next Hospital ID
-  const generateHospitalId = () => {
-    const allIds = [...allHospitalsData, ...hospitals].map((hospital) =>
-      Number.parseInt(hospital.id.replace("H", ""))
+  // generate next MOH ID
+  const generateMohId = () => {
+    const allIds = [...allMohAccounts, ...mohAccounts].map((account) =>
+      Number.parseInt(account.id.replace("MOH", ""))
     );
     const nextId = Math.max(...allIds) + 1;
-    return `H${nextId.toString().padStart(3, "0")}`;
+    return `MOH${nextId.toString().padStart(3, "0")}`;
   };
 
+  // generate random password
   const generatePassword = () => {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -326,12 +246,7 @@ export default function ManageHospitals() {
   // apply filters
   const handleApplyFilter = () => {
     if (!filterProvince && !searchQuery.trim()) {
-      toast({
-        title: "Filter Required",
-        description:
-          "Please select a province or enter a search term to filter hospitals",
-        variant: "destructive",
-      });
+      toast.error("Please select a province or enter a search term");
       return;
     }
 
@@ -339,17 +254,17 @@ export default function ManageHospitals() {
 
     // simulate API call delay
     setTimeout(() => {
-      let filteredHospitals = allHospitalsData;
+      let filteredAccounts = allMohAccounts;
 
       // filter by province and district
       if (filterProvince) {
-        filteredHospitals = filteredHospitals.filter(
-          (hospital) => hospital.province === filterProvince
+        filteredAccounts = filteredAccounts.filter(
+          (account) => account.province === filterProvince
         );
 
         if (filterDistrict) {
-          filteredHospitals = filteredHospitals.filter(
-            (hospital) => hospital.district === filterDistrict
+          filteredAccounts = filteredAccounts.filter(
+            (account) => account.district === filterDistrict
           );
         }
       }
@@ -357,16 +272,16 @@ export default function ManageHospitals() {
       // apply search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        filteredHospitals = filteredHospitals.filter(
-          (hospital) =>
-            hospital.name.toLowerCase().includes(query) ||
-            hospital.email.toLowerCase().includes(query) ||
-            hospital.id.toLowerCase().includes(query) ||
-            hospital.district.toLowerCase().includes(query)
+        filteredAccounts = filteredAccounts.filter(
+          (account) =>
+            account.name.toLowerCase().includes(query) ||
+            account.email.toLowerCase().includes(query) ||
+            account.id.toLowerCase().includes(query) ||
+            account.district.toLowerCase().includes(query)
         );
       }
 
-      setHospitals(filteredHospitals);
+      setMohAccounts(filteredAccounts);
       setCurrentPage(1);
       setHasAppliedFilter(true);
       setIsLoading(false);
@@ -378,121 +293,63 @@ export default function ManageHospitals() {
     setFilterProvince("");
     setFilterDistrict("");
     setSearchQuery("");
-    setHospitals([]);
+    setMohAccounts([]);
     setHasAppliedFilter(false);
     setCurrentPage(1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleAddAccount = () => {
     if (
-      !formData.name ||
-      !formData.email ||
-      !formData.province ||
-      !formData.district
+      !newAccount.name ||
+      !newAccount.contactNo ||
+      !newAccount.email ||
+      !newAccount.province ||
+      !newAccount.district
     ) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all fields");
       return;
     }
 
-    setIsLoading(true);
-
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const hospitalId = formData.id || generateHospitalId();
+    const mohId = generateMohId();
     const password = generatePassword();
-    setGeneratedPassword(password);
 
-    // add new hospital to the current filtered list if it matches the current filter
-    const newHospital = {
-      ...formData,
-      id: hospitalId,
+    const accountToAdd = {
+      id: mohId,
+      name: newAccount.name,
+      contactNo: newAccount.contactNo,
+      email: newAccount.email,
+      province: newAccount.province,
+      district: newAccount.district,
       status: "Active",
       createdDate: new Date().toISOString().split("T")[0],
     };
 
     // add to both the current filtered results and the master list
-    if (hasAppliedFilter) {
-      let shouldAddToResults = false;
+    setMohAccounts((prev) => [...prev, accountToAdd]);
+    allMohAccounts.push(accountToAdd);
 
-      // check if new hospital matches current filters
-      if (filterProvince && !searchQuery.trim()) {
-        // province/district filter only
-        shouldAddToResults =
-          newHospital.province === filterProvince &&
-          (!filterDistrict || newHospital.district === filterDistrict);
-      } else if (!filterProvince && searchQuery.trim()) {
-        // search filter only
-        const query = searchQuery.toLowerCase();
-        shouldAddToResults =
-          newHospital.name.toLowerCase().includes(query) ||
-          newHospital.email.toLowerCase().includes(query) ||
-          newHospital.id.toLowerCase().includes(query) ||
-          newHospital.district.toLowerCase().includes(query);
-      } else if (filterProvince && searchQuery.trim()) {
-        // both province/district and search filters
-        const matchesLocation =
-          newHospital.province === filterProvince &&
-          (!filterDistrict || newHospital.district === filterDistrict);
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          newHospital.name.toLowerCase().includes(query) ||
-          newHospital.email.toLowerCase().includes(query) ||
-          newHospital.id.toLowerCase().includes(query) ||
-          newHospital.district.toLowerCase().includes(query);
-        shouldAddToResults = matchesLocation && matchesSearch;
-      }
-
-      if (shouldAddToResults) {
-        setHospitals([...hospitals, newHospital]);
-      }
-    }
-
-    // add to master list
-    allHospitalsData.push(newHospital);
-
-    setIsLoading(false);
+    setCreatedAccount({ ...accountToAdd, password });
+    setNewAccount({
+      name: "",
+      contactNo: "",
+      email: "",
+      province: "",
+      district: "",
+    });
     setIsAddDialogOpen(false);
     setIsSuccessDialogOpen(true);
-
-    toast({
-      title: "Hospital Added Successfully",
-      description: "The hospital account has been created",
-    });
+    toast.success("MOH account created successfully!");
   };
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      toast({
-        title: "Copied to clipboard",
-        description: `${field} has been copied`,
-      });
-      setTimeout(() => setCopiedField(""), 2000);
+      toast.success(`${field} copied to clipboard!`);
+      setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy to clipboard",
-        variant: "destructive",
-      });
+      toast.error("Failed to copy to clipboard");
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = () => {
-    setFormData({ id: "", name: "", email: "", province: "", district: "" });
-    setGeneratedPassword("");
-    setCopiedField("");
   };
 
   // get active filter description
@@ -510,14 +367,11 @@ export default function ManageHospitals() {
     return filters;
   };
 
-  useEffect(() => {
-    // fetch all hospitals initially
-    // const allHospitals = getAllHospitals();
-    // setHospitals(allHospitals);
-  }, []);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
-  const handleViewDetails = (hospital: any) => {
-    setSelectedHospital(hospital);
+  const handleViewDetails = (account: any) => {
+    setSelectedAccount(account);
     setIsViewDialogOpen(true);
   };
 
@@ -527,64 +381,68 @@ export default function ManageHospitals() {
         <div className="space-y-3">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Hospital className="w-8 h-8 mr-3 text-red-600" />
-              Manage Hospitals
+              <Building2 className="w-8 h-8 mr-3 text-red-600" />
+              Manage MOH
             </h1>
-            <p className="text-gray-600">
-              View and manage hospital accounts in the system
+            <p className="text-muted-foreground">
+              Manage Ministry of Health accounts and permissions
             </p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button
-                className="bg-red-600 hover:bg-red-700"
-                onClick={resetForm}
-              >
+              <Button className="bg-red-600 hover:bg-red-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Register Hospital
+                Register MOH Account
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Register New Hospital</DialogTitle>
+                <DialogTitle>Register New MOH Account</DialogTitle>
                 <DialogDescription>
-                  Enter the details for the new hospital account. A secure
-                  password will be generated automatically.
+                  Create a new Ministry of Health account. A secure password
+                  will be generated automatically.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="id">Hospital ID (Optional)</Label>
-                  <Input
-                    id="id"
-                    value={formData.id}
-                    onChange={(e) => handleInputChange("id", e.target.value)}
-                    placeholder="Leave empty to auto-generate"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Hospital Name *</Label>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">MOH Name</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="e.g., General Hospital Colombo"
-                    required
+                    placeholder="Enter full name"
+                    value={newAccount.name}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, name: e.target.value })
+                    }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                <div className="grid gap-2">
+                  <Label htmlFor="contact">Contact Number</Label>
+                  <Input
+                    id="contact"
+                    placeholder="+94 XX XXX XXXX"
+                    value={newAccount.contactNo}
+                    onChange={(e) =>
+                      setNewAccount({
+                        ...newAccount,
+                        contactNo: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="e.g., admin@hospital.lk"
-                    required
+                    placeholder="name@moh.gov.lk"
+                    value={newAccount.email}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, email: e.target.value })
+                    }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Province *</Label>
+                <div className="grid gap-2">
+                  <Label>Province</Label>
                   <Popover
                     open={openFormProvince}
                     onOpenChange={setOpenFormProvince}
@@ -594,9 +452,9 @@ export default function ManageHospitals() {
                         variant="outline"
                         role="combobox"
                         aria-expanded={openFormProvince}
-                        className="w-full justify-between bg-transparent"
+                        className="justify-between bg-transparent"
                       >
-                        {formData.province || "Select province..."}
+                        {newAccount.province || "Select province..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -612,11 +470,11 @@ export default function ManageHospitals() {
                                 value={province}
                                 onSelect={(currentValue) => {
                                   const selectedProvince =
-                                    currentValue === formData.province
+                                    currentValue === newAccount.province
                                       ? ""
                                       : currentValue;
-                                  setFormData({
-                                    ...formData,
+                                  setNewAccount({
+                                    ...newAccount,
                                     province: selectedProvince,
                                     district: "",
                                   });
@@ -626,7 +484,7 @@ export default function ManageHospitals() {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    formData.province === province
+                                    newAccount.province === province
                                       ? "opacity-100"
                                       : "opacity-0"
                                   )}
@@ -640,8 +498,8 @@ export default function ManageHospitals() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="space-y-2">
-                  <Label>District *</Label>
+                <div className="grid gap-2">
+                  <Label>District</Label>
                   <Popover
                     open={openFormDistrict}
                     onOpenChange={setOpenFormDistrict}
@@ -651,10 +509,10 @@ export default function ManageHospitals() {
                         variant="outline"
                         role="combobox"
                         aria-expanded={openFormDistrict}
-                        className="w-full justify-between bg-transparent"
-                        disabled={!formData.province}
+                        className="justify-between bg-transparent"
+                        disabled={!newAccount.province}
                       >
-                        {formData.district || "Select district..."}
+                        {newAccount.district || "Select district..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -670,11 +528,11 @@ export default function ManageHospitals() {
                                 value={district}
                                 onSelect={(currentValue) => {
                                   const selectedDistrict =
-                                    currentValue === formData.district
+                                    currentValue === newAccount.district
                                       ? ""
                                       : currentValue;
-                                  setFormData({
-                                    ...formData,
+                                  setNewAccount({
+                                    ...newAccount,
                                     district: selectedDistrict,
                                   });
                                   setOpenFormDistrict(false);
@@ -683,7 +541,7 @@ export default function ManageHospitals() {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    formData.district === district
+                                    newAccount.district === district
                                       ? "opacity-100"
                                       : "opacity-0"
                                   )}
@@ -697,30 +555,21 @@ export default function ManageHospitals() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-red-600 hover:bg-red-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      "Register Hospital"
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={handleAddAccount}
+                >
+                  Create Account
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -730,12 +579,12 @@ export default function ManageHospitals() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="w-5 h-5 mr-2 text-red-600" />
-              Filter Hospitals
+              Filter MOH Accounts
             </CardTitle>
-            <CardDescription>
+            <p className="text-sm text-muted-foreground">
               Filter by province and district, search by name/email/ID, or use
               both together
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -773,7 +622,7 @@ export default function ManageHospitals() {
                                     ? ""
                                     : currentValue;
                                 setFilterProvince(selectedProvince);
-                                setFilterDistrict("");
+                                setFilterDistrict(""); // Reset district when province changes
                                 setOpenFilterProvince(false);
                               }}
                             >
@@ -924,7 +773,7 @@ export default function ManageHospitals() {
                   </h3>
                   <p className="text-gray-500 mt-1">
                     Please select a province, enter a search term, or use both
-                    to view hospitals.
+                    to view MOH accounts.
                   </p>
                 </div>
               </div>
@@ -951,38 +800,27 @@ export default function ManageHospitals() {
           <Card>
             <CardHeader>
               <CardTitle>
-                Hospitals
+                MOH Accounts
                 {getActiveFilters().length > 0 && (
                   <span className="text-sm font-normal text-muted-foreground ml-2">
                     ({getActiveFilters().join(", ")})
                   </span>
                 )}
               </CardTitle>
-              <CardDescription>
-                {hospitals.length === 0
-                  ? "No hospitals found matching your criteria"
-                  : `Found ${hospitals.length} hospital${
-                      hospitals.length !== 1 ? "s" : ""
+              <p className="text-sm text-muted-foreground">
+                {mohAccounts.length === 0
+                  ? "No MOH accounts found matching your criteria"
+                  : `Found ${mohAccounts.length} MOH account${
+                      mohAccounts.length !== 1 ? "s" : ""
                     } matching your criteria`}
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent>
-              {hospitals.length === 0 ? (
+              {mohAccounts.length === 0 ? (
                 <div className="text-center py-8">
-                  <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No Hospitals Found
-                  </h3>
-                  <p className="text-gray-600">
-                    No hospitals found matching your filter criteria.
+                  <p className="text-gray-500">
+                    No MOH accounts found. Try adjusting your filters.
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={handleClearFilter}
-                    className="mt-4 bg-transparent"
-                  >
-                    Clear Filters
-                  </Button>
                 </div>
               ) : (
                 <>
@@ -994,7 +832,10 @@ export default function ManageHospitals() {
                             ID
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
-                            Hospital Name
+                            MOH Name
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                            Contact No
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Email
@@ -1014,44 +855,47 @@ export default function ManageHospitals() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentHospitals.map((hospital) => (
-                          <TableRow key={hospital.id}>
+                        {currentAccounts.map((account) => (
+                          <TableRow key={account.id}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {hospital.id}
+                              {account.id}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              <div className="max-w-[150px] truncate">
-                                {hospital.name}
+                              <div className="max-w-[120px] truncate">
+                                {account.name}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
+                              {account.contactNo}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <div className="max-w-[150px] truncate">
-                                {hospital.email}
+                                {account.email}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {hospital.district}
+                              {account.district}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <Badge
                                 variant={
-                                  hospital.status === "Active"
+                                  account.status === "Active"
                                     ? "default"
                                     : "secondary"
                                 }
                               >
-                                {hospital.status}
+                                {account.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {hospital.createdDate}
+                              {account.createdDate}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1 md:space-x-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleViewDetails(hospital)}
+                                  onClick={() => handleViewDetails(account)}
                                   className="p-1 md:p-2"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -1085,8 +929,8 @@ export default function ManageHospitals() {
                   <div className="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
                     <p className="text-sm text-gray-600">
                       Showing {startIndex + 1} to{" "}
-                      {Math.min(endIndex, hospitals.length)} of{" "}
-                      {hospitals.length} hospitals
+                      {Math.min(endIndex, mohAccounts.length)} of{" "}
+                      {mohAccounts.length} MOH accounts
                     </p>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -1122,27 +966,34 @@ export default function ManageHospitals() {
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Hospital Details</DialogTitle>
+              <DialogTitle>MOH Account Details</DialogTitle>
               <DialogDescription>
-                Complete information about the selected hospital
+                Complete information about the selected MOH account
               </DialogDescription>
             </DialogHeader>
-            {selectedHospital && (
+            {selectedAccount && (
               <div className="space-y-4">
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">Hospital ID</Label>
-                      <p className="text-sm">{selectedHospital.id}</p>
+                      <Label className="text-sm font-medium">MOH ID</Label>
+                      <p className="text-sm">{selectedAccount.id}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">MOH Name</Label>
+                      <p className="text-sm">{selectedAccount.name}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">
-                        Hospital Name
+                        Contact Number
                       </Label>
-                      <p className="text-sm">{selectedHospital.name}</p>
+                      <p className="text-sm">{selectedAccount.contactNo}</p>
                     </div>
                   </div>
 
@@ -1151,21 +1002,21 @@ export default function ManageHospitals() {
                       <Label className="text-sm font-medium">
                         Email Address
                       </Label>
-                      <p className="text-sm">{selectedHospital.email}</p>
+                      <p className="text-sm">{selectedAccount.email}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Province</Label>
-                      <p className="text-sm">{selectedHospital.province}</p>
+                      <p className="text-sm">{selectedAccount.province}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">District</Label>
-                      <p className="text-sm">{selectedHospital.district}</p>
+                      <p className="text-sm">{selectedAccount.district}</p>
                     </div>
                   </div>
 
@@ -1174,12 +1025,12 @@ export default function ManageHospitals() {
                       <Label className="text-sm font-medium">Status</Label>
                       <Badge
                         variant={
-                          selectedHospital.status === "Active"
+                          selectedAccount.status === "Active"
                             ? "default"
                             : "secondary"
                         }
                       >
-                        {selectedHospital.status}
+                        {selectedAccount.status}
                       </Badge>
                     </div>
                   </div>
@@ -1189,7 +1040,7 @@ export default function ManageHospitals() {
                       <Label className="text-sm font-medium">
                         Created Date
                       </Label>
-                      <p className="text-sm">{selectedHospital.createdDate}</p>
+                      <p className="text-sm">{selectedAccount.createdDate}</p>
                     </div>
                   </div>
                 </div>
@@ -1209,124 +1060,115 @@ export default function ManageHospitals() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle className="text-green-600">
-                Hospital Added Successfully!
+                Account Created Successfully!
               </DialogTitle>
               <DialogDescription>
-                The hospital account has been created. Please save these
-                credentials securely.
+                The MOH account has been created. Please save these credentials
+                securely.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">Hospital ID</p>
-                    <p className="text-sm text-gray-600">{formData.id}</p>
+            {createdAccount && (
+              <div className="space-y-4">
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">MOH ID</Label>
+                      <p className="text-sm">{createdAccount.id}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(createdAccount.id, "MOH ID")
+                      }
+                    >
+                      {copiedField === "MOH ID" ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(formData.id, "Hospital ID")}
-                  >
-                    {copiedField === "Hospital ID" ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Name</Label>
+                      <p className="text-sm">{createdAccount.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Province</Label>
+                      <p className="text-sm">{createdAccount.province}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">District</Label>
+                      <p className="text-sm">{createdAccount.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Email</Label>
+                      <p className="text-sm">{createdAccount.email}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(createdAccount.email, "Email")
+                      }
+                    >
+                      {copiedField === "Email" ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium text-yellow-800">
+                        Generated Password
+                      </Label>
+                      <p className="text-sm font-mono bg-yellow-100 px-2 py-1 rounded mt-1">
+                        {createdAccount.password}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(createdAccount.password, "Password")
+                      }
+                    >
+                      {copiedField === "Password" ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">Hospital Name</p>
-                    <p className="text-sm text-gray-600">{formData.name}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-gray-600">{formData.email}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(formData.email, "Email")}
-                  >
-                    {copiedField === "Email" ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">Province</p>
-                    <p className="text-sm text-gray-600">{formData.province}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">District</p>
-                    <p className="text-sm text-gray-600">{formData.district}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      Generated Password
-                    </p>
-                    <p className="text-sm font-mono bg-yellow-100 px-2 py-1 rounded mt-1">
-                      {generatedPassword}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(generatedPassword, "Password")
-                    }
-                  >
-                    {copiedField === "Password" ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    <strong>Important:</strong> Please save these credentials
+                    securely. The password will not be shown again for security
+                    reasons.
+                  </p>
                 </div>
               </div>
-
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">
-                  <strong>Important:</strong> Please save these credentials
-                  securely. The password will not be shown again for security
-                  reasons.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => {
-                    setIsSuccessDialogOpen(false);
-                    setIsAddDialogOpen(true);
-                    resetForm();
-                  }}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
-                >
-                  Register Another Hospital
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsSuccessDialogOpen(false)}
-                  className="flex-1"
-                >
-                  Close
-                </Button>
-              </div>
+            )}
+            <div className="flex justify-end">
+              <Button onClick={() => setIsSuccessDialogOpen(false)}>
+                Close
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

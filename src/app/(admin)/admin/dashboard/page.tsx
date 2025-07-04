@@ -17,6 +17,7 @@ import {
   TrendingUp,
   AlertCircle,
   Building2,
+  Hospital,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -57,8 +58,22 @@ export default function AdminDashboard() {
       title: "Manage Hospitals",
       description: "View and manage hospital accounts",
       href: "/admin/dashboard/manage-hospitals",
-      icon: Building2,
+      icon: Hospital,
       color: "bg-blue-500",
+    },
+    {
+      title: "Manage MOH",
+      description: "View and manage MOH",
+      href: "/admin/dashboard/manage-moh",
+      icon: Building2,
+      color: "bg-rose-500",
+    },
+    {
+      title: "Manage Vaccines",
+      description: "View and manage vaccines",
+      href: "/admin/dashboard/manage-vaccines",
+      icon: Syringe,
+      color: "bg-orange-500",
     },
     {
       title: "Manage Healthcare Providers",
@@ -79,7 +94,7 @@ export default function AdminDashboard() {
       description: "View and manage vaccination records",
       href: "/admin/dashboard/manage-vaccination-records",
       icon: Syringe,
-      color: "bg-orange-500",
+      color: "bg-gray-500",
     },
   ];
 
@@ -158,7 +173,7 @@ export default function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {quickActions.map((action) => (
                 <Link key={action.title} href={action.href}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">

@@ -26,6 +26,7 @@ import {
   X,
   Plus,
   Building2,
+  Users,
 } from "lucide-react";
 
 const navigation = [
@@ -38,6 +39,11 @@ const navigation = [
     name: "Manage Hospitals",
     href: "/admin/dashboard/manage-hospitals",
     icon: Building2,
+  },
+  {
+    name: "Manage MOH",
+    href: "/admin/dashboard/manage-moh",
+    icon: Users,
   },
   {
     name: "Manage Healthcare Providers",

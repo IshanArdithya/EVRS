@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
@@ -39,6 +40,19 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Baby,
   Plus,
   Copy,
@@ -46,8 +60,14 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Edit,
+  ChevronsUpDown,
+  Search,
+  Filter,
+  Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const sriLankanDistricts = [
   "Ampara",
@@ -78,7 +98,7 @@ const sriLankanDistricts = [
 ];
 
 // mock data
-const mockCitizens = [
+const allCitizens = [
   {
     id: "NB001",
     name: "Amal Perera",
@@ -127,10 +147,52 @@ const mockCitizens = [
     district: "Ratnapura",
     division: "Ratnapura City",
   },
+  {
+    id: "NB009",
+    name: "Malini Wijesinghe",
+    district: "Colombo",
+    division: "Colombo 02",
+  },
+  {
+    id: "NB010",
+    name: "Kasun Mendis",
+    district: "Gampaha",
+    division: "Negombo",
+  },
+  {
+    id: "NB011",
+    name: "Dilani Perera",
+    district: "Kalutara",
+    division: "Kalutara North",
+  },
+  {
+    id: "NB012",
+    name: "Nuwan Bandara",
+    district: "Kandy",
+    division: "Peradeniya",
+  },
+  {
+    id: "NB013",
+    name: "Chamari Silva",
+    district: "Matale",
+    division: "Matale Central",
+  },
+  {
+    id: "NB014",
+    name: "Ruwan Jayasuriya",
+    district: "Nuwara Eliya",
+    division: "Nuwara Eliya Town",
+  },
+  {
+    id: "NB015",
+    name: "Sachini Fernando",
+    district: "Batticaloa",
+    division: "Batticaloa Central",
+  },
 ];
 
 export default function ManageCitizens() {
-  const [citizens, setCitizens] = useState(mockCitizens);
+  const [citizens, setCitizens] = useState<typeof allCitizens>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -146,6 +208,17 @@ export default function ManageCitizens() {
     division: "",
     guardianNic: "",
   });
+
+  // filter states
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [filterDivision, setFilterDivision] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
+
+  // combobox states for filters
+  const [openFilterDistrict, setOpenFilterDistrict] = useState(false);
+
   const { toast } = useToast();
 
   const itemsPerPage = 5;
@@ -162,6 +235,68 @@ export default function ManageCitizens() {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
+  };
+
+  // apply filters
+  const handleApplyFilter = () => {
+    if (!filterDistrict && !filterDivision.trim() && !searchQuery.trim()) {
+      toast({
+        title: "Filter Required",
+        description:
+          "Please select a district, enter a division, or enter a search term",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFilterLoading(true);
+
+    // simulate API call delay
+    setTimeout(() => {
+      let filteredCitizens = allCitizens;
+
+      // filter by district
+      if (filterDistrict) {
+        filteredCitizens = filteredCitizens.filter(
+          (citizen) => citizen.district === filterDistrict
+        );
+      }
+
+      // filter by division
+      if (filterDivision.trim()) {
+        const divisionQuery = filterDivision.toLowerCase();
+        filteredCitizens = filteredCitizens.filter((citizen) =>
+          citizen.division.toLowerCase().includes(divisionQuery)
+        );
+      }
+
+      // apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filteredCitizens = filteredCitizens.filter(
+          (citizen) =>
+            citizen.name.toLowerCase().includes(query) ||
+            citizen.id.toLowerCase().includes(query) ||
+            citizen.district.toLowerCase().includes(query) ||
+            citizen.division.toLowerCase().includes(query)
+        );
+      }
+
+      setCitizens(filteredCitizens);
+      setCurrentPage(1);
+      setHasAppliedFilter(true);
+      setIsFilterLoading(false);
+    }, 1000);
+  };
+
+  // clear filters
+  const handleClearFilter = () => {
+    setFilterDistrict("");
+    setFilterDivision("");
+    setSearchQuery("");
+    setCitizens([]);
+    setHasAppliedFilter(false);
+    setCurrentPage(1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,7 +316,10 @@ export default function ManageCitizens() {
       district: formData.district,
       division: formData.division,
     };
-    setCitizens([...citizens, newCitizen]);
+
+    // add to both the current filtered results and the master list
+    setCitizens((prev) => [...prev, newCitizen]);
+    allCitizens.push(newCitizen);
 
     setIsLoading(false);
     setIsAddDialogOpen(false);
@@ -221,10 +359,33 @@ export default function ManageCitizens() {
     setCopiedField("");
   };
 
+  // get active filter description
+  const getActiveFilters = () => {
+    const filters = [];
+    if (filterDistrict) {
+      filters.push(`District: ${filterDistrict}`);
+    }
+    if (filterDivision) {
+      filters.push(`Division: ${filterDivision}`);
+    }
+    if (searchQuery) {
+      filters.push(`Search: "${searchQuery}"`);
+    }
+    return filters;
+  };
+
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedCitizen, setSelectedCitizen] = useState<any>(null);
+
+  const handleViewDetails = (citizen: any) => {
+    setSelectedCitizen(citizen);
+    setIsViewDialogOpen(true);
+  };
+
   return (
     <AdminDashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="space-y-3">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
               <Baby className="w-8 h-8 mr-3 text-red-600" />
@@ -373,72 +534,371 @@ export default function ManageCitizens() {
           </Dialog>
         </div>
 
+        {/* filter section */}
         <Card>
           <CardHeader>
-            <CardTitle>Citizens ({citizens.length})</CardTitle>
-            <CardDescription>
-              List of all registered citizens in the system
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5 mr-2 text-red-600" />
+              Filter Citizens
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Filter by district and division, search by name/email/ID, or use
+              both together
+            </p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>District</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentCitizens.map((citizen) => (
-                  <TableRow key={citizen.id}>
-                    <TableCell className="font-medium">{citizen.id}</TableCell>
-                    <TableCell>{citizen.name}</TableCell>
-                    <TableCell>{citizen.district}</TableCell>
-                    <TableCell>{citizen.division}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Active</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* district filter */}
+              <div className="space-y-2">
+                <Label>District (Optional)</Label>
+                <Popover
+                  open={openFilterDistrict}
+                  onOpenChange={setOpenFilterDistrict}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openFilterDistrict}
+                      className="w-full justify-between bg-transparent"
+                    >
+                      {filterDistrict || "Select district..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search district..." />
+                      <CommandList>
+                        <CommandEmpty>No district found.</CommandEmpty>
+                        <CommandGroup>
+                          {sriLankanDistricts.map((district) => (
+                            <CommandItem
+                              key={district}
+                              value={district}
+                              onSelect={(currentValue) => {
+                                const selectedDistrict =
+                                  currentValue === filterDistrict
+                                    ? ""
+                                    : currentValue;
+                                setFilterDistrict(selectedDistrict);
+                                setOpenFilterDistrict(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filterDistrict === district
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {district}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-            {/* pagination */}
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-600">
-                Showing {startIndex + 1} to{" "}
-                {Math.min(endIndex, citizens.length)} of {citizens.length}{" "}
-                citizens
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+              {/* division filter */}
+              <div className="space-y-2">
+                <Label>Division (Optional)</Label>
+                <Input
+                  placeholder="Enter division..."
+                  value={filterDivision}
+                  onChange={(e) => setFilterDivision(e.target.value)}
+                />
+              </div>
+
+              {/* search filter */}
+              <div className="space-y-2">
+                <Label>Search (Optional)</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search by name, ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* action buttons */}
+              <div className="space-y-2">
+                <Label className="invisible">Actions</Label>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleApplyFilter}
+                    disabled={
+                      !filterDistrict &&
+                      !filterDivision.trim() &&
+                      !searchQuery.trim()
+                    }
+                    className="flex-1 bg-red-600 hover:bg-red-700"
+                  >
+                    <Filter className="w-4 h-4 mr-2" />
+                    Apply Filter
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleClearFilter}
+                    disabled={!hasAppliedFilter}
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {/* active filters display */}
+            {hasAppliedFilter && getActiveFilters().length > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-800 mb-1">
+                  Active Filters:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {getActiveFilters().map((filter, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="bg-blue-100 text-blue-800"
+                    >
+                      {filter}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* results section */}
+        {!hasAppliedFilter ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                  <Search className="w-8 h-8 text-gray-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    No Filter Applied
+                  </h3>
+                  <p className="text-gray-500 mt-1">
+                    Please select a district, enter a division, or enter a
+                    search term to view citizens.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : isFilterLoading ? (
+          <Card>
+            <CardHeader>
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-1/4"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex space-x-4">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Citizens
+                {getActiveFilters().length > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    ({getActiveFilters().join(", ")})
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {citizens.length === 0
+                  ? "No citizens found matching your criteria"
+                  : `Found ${citizens.length} citizen${
+                      citizens.length !== 1 ? "s" : ""
+                    } matching your criteria`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {citizens.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    No citizens found. Try adjusting your filters.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">
+                            ID
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap">
+                            Name
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                            District
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                            Division
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                            Status
+                          </TableHead>
+                          <TableHead className="text-right whitespace-nowrap">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentCitizens.map((citizen) => (
+                          <TableRow key={citizen.id}>
+                            <TableCell className="font-medium whitespace-nowrap">
+                              {citizen.id}
+                            </TableCell>
+                            <TableCell className="">{citizen.name}</TableCell>
+                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                              {citizen.district}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                              {citizen.division}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                              <Badge variant="secondary">Active</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-1 md:space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(citizen)}
+                                  className="p-1 md:p-2"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span className="sr-only">View</span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1 md:p-2"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  <span className="sr-only">Edit</span>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* pagination */}
+                  <div className="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
+                    <p className="text-sm text-gray-600">
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(endIndex, citizens.length)} of {citizens.length}{" "}
+                      citizens
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="sr-only md:not-sr-only">Previous</span>
+                      </Button>
+                      <span className="text-sm">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        <span className="sr-only md:not-sr-only">Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* view details dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Citizen Details</DialogTitle>
+              <DialogDescription>
+                Complete information about the selected citizen
+              </DialogDescription>
+            </DialogHeader>
+            {selectedCitizen && (
+              <div className="space-y-4">
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Citizen ID</Label>
+                      <p className="text-sm">{selectedCitizen.id}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Full Name</Label>
+                      <p className="text-sm">{selectedCitizen.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">District</Label>
+                      <p className="text-sm">{selectedCitizen.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Division</Label>
+                      <p className="text-sm">{selectedCitizen.division}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Status</Label>
+                      <Badge variant="secondary">Active</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* success dialog */}
         <Dialog
