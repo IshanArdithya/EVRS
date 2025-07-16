@@ -44,8 +44,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/logout/citizen", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        router.replace("/login");
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (err) {
+      console.error("Error logging out:", err);
+    }
   };
 
   return (
@@ -114,12 +127,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/new-vaccination">
-                      <Syringe className="mr-2 h-4 w-4" />
-                      New Vaccination
-                    </Link>
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/profile">Profile Settings</Link>
                   </DropdownMenuItem>

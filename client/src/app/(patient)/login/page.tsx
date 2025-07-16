@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,15 +18,63 @@ import { Eye, EyeOff, Shield } from "lucide-react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [citizenId, setCitizenId] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/get/citizen", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          router.replace("/dashboard");
+        }
+      } catch (err) {
+        console.error("Session check failed:", err);
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // test login
-    if (email && password) {
-      router.push("/dashboard");
+    setError("");
+
+    if (!citizenId || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login/citizen", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          citizenId: citizenId,
+          password: password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed. Please try again.");
+      } else {
+        // can optionally store user info in state/context
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
     }
   };
 
@@ -57,13 +105,16 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="citizenId">Citizen ID</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="patient@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="citizenId"
+                  type="text"
+                  placeholder="C1234567890"
+                  value={citizenId}
+                  onChange={(e) => {
+                    setCitizenId(e.target.value);
+                    if (error) setError("");
+                  }}
                   required
                   className="mt-2 border-primary-DEFAULT/20 focus:border-primary-DEFAULT"
                 />
@@ -77,7 +128,10 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (error) setError("");
+                    }}
                     required
                     className="mt-2 border-primary-DEFAULT/20 focus:border-primary-DEFAULT pr-10"
                   />
@@ -96,6 +150,11 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
 
               <Button
                 type="submit"
