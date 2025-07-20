@@ -54,93 +54,19 @@ import {
   Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/api";
 
 // roles
-const availableRoles = ["Doctor", "Nurse", "Midwife"];
-
-// mock data
-const allProviders = [
-  {
-    id: "HP001",
-    name: "Dr. Samantha Silva",
-    email: "samantha.silva@cgh.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP002",
-    name: "Nurse Mary Fernando",
-    email: "mary.fernando@thk.lk",
-    role: "Nurse",
-  },
-  {
-    id: "HP003",
-    name: "Dr. Kamal Perera",
-    email: "kamal.perera@bhg.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP004",
-    name: "Pharmacist John Dias",
-    email: "john.dias@dha.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP005",
-    name: "Dr. Mihan Jayawardena",
-    email: "mihan.j@phb.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP006",
-    name: "Nurse Lisa WW",
-    email: "lisa.ww@dhn.lk",
-    role: "Nurse",
-  },
-  {
-    id: "HP007",
-    name: "Medical Tech David Kumar",
-    email: "david.kumar@pmcuj.lk",
-    role: "Nurse",
-  },
-  {
-    id: "HP008",
-    name: "Dr. Anjali Wickramasinghe",
-    email: "anjali.w@rhr.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP009",
-    name: "Midwife Sarah Perera",
-    email: "sarah.perera@hospital.lk",
-    role: "Midwife",
-  },
-  {
-    id: "HP010",
-    name: "Midwife Kamala Silva",
-    email: "kamala.silva@clinic.lk",
-    role: "Midwife",
-  },
-  {
-    id: "HP011",
-    name: "Dr. Nimal Fernando",
-    email: "nimal.fernando@hospital.lk",
-    role: "Doctor",
-  },
-  {
-    id: "HP012",
-    name: "Nurse Priya Jayasinghe",
-    email: "priya.j@medical.lk",
-    role: "Nurse",
-  },
-];
+const availableRoles = ["doctor", "nurse", "midwife"];
 
 export default function ManageHealthcareProviders() {
-  const [providers, setProviders] = useState<typeof allProviders>([]);
+  const [providers, setProviders] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedField, setCopiedField] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [generatedHcpId, setGeneratedHcpId] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [formData, setFormData] = useState({
     id: "",
@@ -164,59 +90,64 @@ export default function ManageHealthcareProviders() {
   const endIndex = startIndex + itemsPerPage;
   const currentProviders = providers.slice(startIndex, endIndex);
 
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
-  // generate next provider ID
-  const generateProviderId = () => {
-    const allIds = [...allProviders, ...providers].map((provider) =>
-      Number.parseInt(provider.id.replace("HP", ""))
-    );
-    const nextId = Math.max(...allIds) + 1;
-    return `HP${nextId.toString().padStart(3, "0")}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.name || !formData.role || !formData.email || !formData.nic) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await api.post("/admin/register-hcp", {
+        fullName: formData.name,
+        role: formData.role,
+        email: formData.email,
+        nic: formData.nic,
+      });
 
-    const password = generatePassword();
-    setGeneratedPassword(password);
+      const { hcp, message } = response.data;
 
-    // add new provider to the list
-    const newProvider = {
-      id: formData.id || generateProviderId(),
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-    };
+      setGeneratedHcpId(hcp.hcpId);
+      setGeneratedPassword(hcp.password);
 
-    // add to both the current filtered results and the master list
-    setProviders([...providers, newProvider]);
-    allProviders.push(newProvider);
+      setProviders((prev) => [
+        ...prev,
+        {
+          ...formData,
+          id: hcp._id,
+          mohId: hcp.mohId,
+          status: "Active",
+          createdDate: new Date().toISOString().split("T")[0],
+        },
+      ]);
 
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
 
-    toast({
-      title: "Healthcare Provider Added Successfully",
-      description: "The healthcare provider account has been created",
-    });
+      toast({
+        title: "MOH Account Added Successfully",
+        description: message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add MOH Account",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     if (!filterRole && !searchQuery.trim()) {
       toast({
         title: "Filter Required",
@@ -228,34 +159,26 @@ export default function ManageHealthcareProviders() {
 
     setIsFilterLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredProviders = allProviders;
+    try {
+      const params: Record<string, string> = {};
+      if (filterRole) params.role = filterRole;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      // filter by role
-      if (filterRole) {
-        filteredProviders = filteredProviders.filter(
-          (provider) => provider.role === filterRole
-        );
-      }
+      const response = await api.get("/admin/hcps", { params });
 
-      // apply search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredProviders = filteredProviders.filter(
-          (provider) =>
-            provider.name.toLowerCase().includes(query) ||
-            provider.email.toLowerCase().includes(query) ||
-            provider.id.toLowerCase().includes(query) ||
-            provider.role.toLowerCase().includes(query)
-        );
-      }
-
-      setProviders(filteredProviders);
+      setProviders(response.data);
       setCurrentPage(1);
       setHasAppliedFilter(true);
+    } catch (error) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch HCPs. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
       setIsFilterLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -304,7 +227,9 @@ export default function ManageHealthcareProviders() {
   const getActiveFilters = () => {
     const filters = [];
     if (filterRole) {
-      filters.push(`Role: ${filterRole}`);
+      filters.push(
+        `Role: ${filterRole.charAt(0).toUpperCase() + filterRole.slice(1)}`
+      );
     }
     if (searchQuery) {
       filters.push(`Search: "${searchQuery}"`);
@@ -351,15 +276,6 @@ export default function ManageHealthcareProviders() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="id">Unique ID (Optional)</Label>
-                  <Input
-                    id="id"
-                    value={formData.id}
-                    onChange={(e) => handleInputChange("id", e.target.value)}
-                    placeholder="e.g., HP013 (auto-generated if empty)"
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role *</Label>
                   <Select
@@ -461,7 +377,7 @@ export default function ManageHealthcareProviders() {
                   <SelectContent>
                     {availableRoles.map((role) => (
                       <SelectItem key={role} value={role}>
-                        {role}
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -618,13 +534,13 @@ export default function ManageHealthcareProviders() {
                       </TableHeader>
                       <TableBody>
                         {currentProviders.map((provider) => (
-                          <TableRow key={provider.id}>
+                          <TableRow key={provider.hcpId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {provider.id}
+                              {provider.hcpId}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <div className="max-w-[120px] truncate">
-                                {provider.name}
+                                {provider.fullName}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
@@ -636,7 +552,8 @@ export default function ManageHealthcareProviders() {
                               <Badge
                                 className={getRoleBadgeColor(provider.role)}
                               >
-                                {provider.role}
+                                {provider.role.charAt(0).toUpperCase() +
+                                  provider.role.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
@@ -729,17 +646,18 @@ export default function ManageHealthcareProviders() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Provider ID</Label>
-                      <p className="text-sm">{selectedProvider.id}</p>
+                      <p className="text-sm">{selectedProvider.hcpId}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Full Name</Label>
-                      <p className="text-sm">{selectedProvider.name}</p>
+                      <p className="text-sm">{selectedProvider.fullName}</p>
                     </div>
                     <Badge className={getRoleBadgeColor(selectedProvider.role)}>
-                      {selectedProvider.role}
+                      {selectedProvider.role.charAt(0).toUpperCase() +
+                        selectedProvider.role.slice(1)}
                     </Badge>
                   </div>
 
@@ -758,7 +676,8 @@ export default function ManageHealthcareProviders() {
                       <Badge
                         className={getRoleBadgeColor(selectedProvider.role)}
                       >
-                        {selectedProvider.role}
+                        {selectedProvider.role.charAt(0).toUpperCase() +
+                          selectedProvider.role.slice(1)}
                       </Badge>
                     </div>
                   </div>
@@ -797,17 +716,15 @@ export default function ManageHealthcareProviders() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Unique ID</p>
-                    <p className="text-sm text-gray-600">
-                      {formData.id || "Auto-generated"}
-                    </p>
+                    <p className="text-sm font-medium">HCP ID</p>
+                    <p className="text-sm text-gray-600">{generatedHcpId}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(formData.id, "Unique ID")}
+                    onClick={() => copyToClipboard(generatedHcpId, "HCP ID")}
                   >
-                    {copiedField === "Unique ID" ? (
+                    {copiedField === "HCP ID" ? (
                       <Check className="h-4 w-4" />
                     ) : (
                       <Copy className="h-4 w-4" />

@@ -40,69 +40,16 @@ import {
   Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// mock data
-const allVaccines = [
-  { id: "V001", name: "BCG Vaccine", description: "Tuberculosis prevention" },
-  {
-    id: "V002",
-    name: "Hepatitis B Vaccine",
-    description: "Hepatitis B prevention",
-  },
-  {
-    id: "V003",
-    name: "DPT Vaccine",
-    description: "Diphtheria, Pertussis, Tetanus prevention",
-  },
-  {
-    id: "V004",
-    name: "Polio Vaccine",
-    description: "Poliomyelitis prevention",
-  },
-  {
-    id: "V005",
-    name: "MMR Vaccine",
-    description: "Measles, Mumps, Rubella prevention",
-  },
-  { id: "V006", name: "COVID-19 Vaccine", description: "COVID-19 prevention" },
-  {
-    id: "V007",
-    name: "Influenza Vaccine",
-    description: "Seasonal flu prevention",
-  },
-  {
-    id: "V008",
-    name: "Pneumococcal Vaccine",
-    description: "Pneumococcal disease prevention",
-  },
-  {
-    id: "V009",
-    name: "Rotavirus Vaccine",
-    description: "Rotavirus gastroenteritis prevention",
-  },
-  {
-    id: "V010",
-    name: "Varicella Vaccine",
-    description: "Chickenpox prevention",
-  },
-  {
-    id: "V011",
-    name: "HPV Vaccine",
-    description: "Human Papillomavirus prevention",
-  },
-  {
-    id: "V012",
-    name: "Meningococcal Vaccine",
-    description: "Meningococcal disease prevention",
-  },
-];
+import api from "@/lib/api";
+import { allVaccines } from "@/types";
 
 export default function ManageVaccines() {
-  const [vaccines, setVaccines] = useState<typeof allVaccines>([]);
+  const [vaccines, setVaccines] = useState<allVaccines[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [generatedVaccineId, setGeneratedVaccineId] = useState("");
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -122,38 +69,29 @@ export default function ManageVaccines() {
   const endIndex = startIndex + itemsPerPage;
   const currentVaccines = vaccines.slice(startIndex, endIndex);
 
-  // gen next vaccine ID
-  const generateVaccineId = () => {
-    const allIds = [...allVaccines, ...vaccines].map((vaccine) =>
-      Number.parseInt(vaccine.id.replace("V", ""))
-    );
-    const nextId = Math.max(...allIds) + 1;
-    return `V${nextId.toString().padStart(3, "0")}`;
-  };
-
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     setIsFilterLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredVaccines = [...allVaccines];
-
-      // apply search filter if search query exists
+    try {
+      const params: Record<string, string> = {};
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredVaccines = filteredVaccines.filter(
-          (vaccine) =>
-            vaccine.name.toLowerCase().includes(query) ||
-            vaccine.id.toLowerCase().includes(query)
-        );
+        params.search = searchQuery.trim();
       }
 
-      setVaccines(filteredVaccines);
-      setCurrentPage(1);
+      const response = await api.get("/admin/vaccines", { params });
+      setVaccines(response.data);
       setHasAppliedFilter(true);
+    } catch (err) {
+      toast({
+        title: "Fetch Error",
+        description: "Could not load vaccines. Try again.",
+        variant: "destructive",
+      });
+      console.error(err);
+    } finally {
       setIsFilterLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -166,29 +104,44 @@ export default function ManageVaccines() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.name || !formData.sideEffects) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await api.post("/admin/register-vaccine", {
+        name: formData.name,
+        sideEffects: formData.sideEffects,
+      });
 
-    // add new vaccine to both the current filtered results and the master list
-    const newVaccine = {
-      id: formData.id,
-      name: formData.name,
-      description: "Custom vaccine",
-    };
+      const { vaccine, message } = response.data;
 
-    setVaccines((prev) => [...prev, newVaccine]);
-    allVaccines.push(newVaccine);
+      setGeneratedVaccineId(vaccine.vaccineId);
 
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
 
-    toast({
-      title: "Vaccine Added Successfully",
-      description: "The new vaccine has been added to the system",
-    });
+      toast({
+        title: "Vaccine Added Successfully",
+        description: message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add Vaccine",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -197,7 +150,7 @@ export default function ManageVaccines() {
 
   const resetForm = () => {
     setFormData({
-      id: generateVaccineId(),
+      id: "",
       name: "",
       sideEffects: "",
     });
@@ -253,16 +206,6 @@ export default function ManageVaccines() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="id">Vaccine ID *</Label>
-                  <Input
-                    id="id"
-                    value={formData.id}
-                    onChange={(e) => handleInputChange("id", e.target.value)}
-                    placeholder="e.g., V013"
-                    required
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Vaccine Name *</Label>
                   <Input
@@ -483,16 +426,16 @@ export default function ManageVaccines() {
                       </TableHeader>
                       <TableBody>
                         {currentVaccines.map((vaccine) => (
-                          <TableRow key={vaccine.id}>
+                          <TableRow key={vaccine.vaccineId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {vaccine.id}
+                              {vaccine.vaccineId}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {vaccine.name}
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="max-w-[200px] truncate">
-                                {vaccine.description}
+                                {vaccine.sideEffects}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
@@ -577,7 +520,7 @@ export default function ManageVaccines() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Vaccine ID</Label>
-                      <p className="text-sm">{selectedVaccine.id}</p>
+                      <p className="text-sm">{selectedVaccine.vaccineId}</p>
                     </div>
                   </div>
 
@@ -592,8 +535,10 @@ export default function ManageVaccines() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">Description</Label>
-                      <p className="text-sm">{selectedVaccine.description}</p>
+                      <Label className="text-sm font-medium">
+                        Side Effects
+                      </Label>
+                      <p className="text-sm">{selectedVaccine.sideEffects}</p>
                     </div>
                   </div>
 
@@ -631,7 +576,7 @@ export default function ManageVaccines() {
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">Vaccine ID</p>
-                  <p className="text-sm text-gray-600">{formData.id}</p>
+                  <p className="text-sm text-gray-600">{generatedVaccineId}</p>
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg">

@@ -36,10 +36,19 @@ export const registerVaccine = async (req, res) => {
 
 export const getAllVaccines = async (req, res) => {
   try {
-    const vaccines = await Vaccine.find().sort({ createdAt: -1 });
+    const { search } = req.query;
+    const filter = {};
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [{ vaccineId: regex }, { name: regex }];
+    }
+
+    const vaccines = await Vaccine.find(filter).sort({ createdAt: -1 });
+
     res.status(200).json(vaccines);
   } catch (error) {
-    console.error("Get vaccines error:", error);
+    console.error("Get all vaccines error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

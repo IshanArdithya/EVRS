@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
 import {
   Card,
@@ -41,19 +41,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Syringe,
   Plus,
   Loader2,
@@ -61,163 +48,15 @@ import {
   ChevronRight,
   Search,
   Filter,
-  Check,
-  ChevronsUpDown,
   Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-
-const vaccineTypes = [
-  "BCG",
-  "Hepatitis B",
-  "DPT",
-  "Polio",
-  "MMR",
-  "Pneumococcal",
-  "Rotavirus",
-  "Influenza",
-  "COVID-19",
-  "Varicella",
-  "HPV",
-  "Meningococcal",
-];
-
-const healthcareProviders = [
-  "Dr. Samantha Silva",
-  "Dr. Kamal Fernando",
-  "Dr. Mihan Jayawardena",
-  "Nurse Nimal Perera",
-  "Dr. Anjali Wickramasinghe",
-  "Nurse Mary Fernando",
-];
-
-const vaccinationLocations = [
-  "Colombo General Hospital",
-  "Kandy Teaching Hospital",
-  "Galle District Hospital",
-  "Anuradhapura General Hospital",
-  "Jaffna Teaching Hospital",
-  "Batticaloa Hospital",
-  "Matara District Hospital",
-  "Kurunegala General Hospital",
-  "Ratnapura Provincial Hospital",
-];
-
-// Extended mock data for better filtering demonstration
-const allVaccinationRecords = [
-  {
-    citizenId: "NB001",
-    citizenName: "Amara Silva",
-    vaccinationType: "BCG",
-    provider: "Dr. Samantha Silva",
-    location: "Colombo General Hospital",
-    date: "2024-01-15",
-    division: "Colombo North",
-  },
-  {
-    citizenId: "NB002",
-    citizenName: "Kamal Perera",
-    vaccinationType: "Hepatitis B",
-    provider: "Nurse Mary Fernando",
-    location: "Kandy Teaching Hospital",
-    date: "2024-01-16",
-    division: "Kandy Central",
-  },
-  {
-    citizenId: "NB003",
-    citizenName: "Nimal Fernando",
-    vaccinationType: "DPT",
-    provider: "Dr. Kamal Fernando",
-    location: "Galle District Hospital",
-    date: "2024-01-17",
-    division: "Galle South",
-  },
-  {
-    citizenId: "NB004",
-    citizenName: "Saman Jayawardena",
-    vaccinationType: "Polio",
-    provider: "Dr. Mihan Jayawardena",
-    location: "Anuradhapura General Hospital",
-    date: "2024-01-18",
-    division: "Anuradhapura East",
-  },
-  {
-    citizenId: "NB005",
-    citizenName: "Kumari Wickramasinghe",
-    vaccinationType: "MMR",
-    provider: "Nurse Nimal Perera",
-    location: "Jaffna Teaching Hospital",
-    date: "2024-01-19",
-    division: "Jaffna North",
-  },
-  {
-    citizenId: "NB006",
-    citizenName: "Ruwan Dissanayake",
-    vaccinationType: "COVID-19",
-    provider: "Dr. Anjali Wickramasinghe",
-    location: "Batticaloa Hospital",
-    date: "2024-01-20",
-    division: "Batticaloa West",
-  },
-  {
-    citizenId: "NB007",
-    citizenName: "Chamari Rajapaksa",
-    vaccinationType: "Influenza",
-    provider: "Dr. Samantha Silva",
-    location: "Colombo General Hospital",
-    date: "2024-01-21",
-    division: "Colombo South",
-  },
-  {
-    citizenId: "NB008",
-    citizenName: "Thilak Gunasekara",
-    vaccinationType: "Pneumococcal",
-    provider: "Nurse Mary Fernando",
-    location: "Kandy Teaching Hospital",
-    date: "2024-01-22",
-    division: "Kandy West",
-  },
-  {
-    citizenId: "NB009",
-    citizenName: "Malini Rathnayake",
-    vaccinationType: "BCG",
-    provider: "Dr. Kamal Fernando",
-    location: "Matara District Hospital",
-    date: "2024-02-01",
-    division: "Matara Central",
-  },
-  {
-    citizenId: "NB010",
-    citizenName: "Pradeep Mendis",
-    vaccinationType: "Hepatitis B",
-    provider: "Dr. Mihan Jayawardena",
-    location: "Kurunegala General Hospital",
-    date: "2024-02-05",
-    division: "Kurunegala North",
-  },
-  {
-    citizenId: "NB011",
-    citizenName: "Sanduni Perera",
-    vaccinationType: "DPT",
-    provider: "Nurse Nimal Perera",
-    location: "Ratnapura Provincial Hospital",
-    date: "2024-02-10",
-    division: "Ratnapura East",
-  },
-  {
-    citizenId: "NB012",
-    citizenName: "Asanka Silva",
-    vaccinationType: "COVID-19",
-    provider: "Dr. Anjali Wickramasinghe",
-    location: "Colombo General Hospital",
-    date: "2024-02-15",
-    division: "Colombo Central",
-  },
-];
+import api from "@/lib/api";
+import { VaccinationRecord, Vaccine } from "@/types";
+import { format } from "date-fns";
 
 export default function ManageVaccinationRecords() {
-  const [records, setRecords] = useState<typeof allVaccinationRecords>([]);
+  const [records, setRecords] = useState<VaccinationRecord[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,21 +66,21 @@ export default function ManageVaccinationRecords() {
     vaccinationType: "",
     batchNumber: "",
     expiryDate: "",
-    healthcareProvider: "",
+    healthcareProviderId: "",
     vaccinationLocation: "",
     division: "",
     notes: "",
   });
 
-  // Filter states
+  // add validation states
+  const [healthcareProviderError, setHealthcareProviderError] = useState("");
+
+  // filter states
   const [filterLocation, setFilterLocation] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
-
-  // Combobox states for filters
-  const [openFilterLocation, setOpenFilterLocation] = useState(false);
 
   const { toast } = useToast();
 
@@ -251,8 +90,24 @@ export default function ManageVaccinationRecords() {
   const endIndex = startIndex + itemsPerPage;
   const currentRecords = records.slice(startIndex, endIndex);
 
+  const [citizenError, setCitizenError] = useState("");
+  const [generatedVaccinationId, setGeneratedVaccinationId] = useState("");
+  const [vaccines, setVaccines] = useState<Vaccine[]>([]);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+
+  const selectedVac = vaccines.find(
+    (v) => v.vaccineId === formData.vaccinationType
+  );
+  const vacName = selectedVac?.name || formData.vaccinationType;
+
+  useEffect(() => {
+    if (!isAddDialogOpen) return;
+    api
+      .get<Vaccine[]>("/admin/vaccines")
+      .then((res) => setVaccines(res.data))
+      .catch((err) => console.error("Failed to load vaccines", err));
+  }, [isAddDialogOpen]);
 
   const handleViewDetails = (record: any) => {
     setSelectedRecord(record);
@@ -260,7 +115,7 @@ export default function ManageVaccinationRecords() {
   };
 
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     if (!filterLocation && !filterDate && !searchQuery.trim()) {
       toast({
         title: "Filter Required",
@@ -271,43 +126,26 @@ export default function ManageVaccinationRecords() {
     }
 
     setIsFilterLoading(true);
+    try {
+      const params: Record<string, string> = {};
+      if (filterLocation) params.location = filterLocation;
+      if (filterDate) params.date = filterDate;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredRecords = allVaccinationRecords;
-
-      // filter by location
-      if (filterLocation) {
-        filteredRecords = filteredRecords.filter(
-          (record) => record.location === filterLocation
-        );
-      }
-
-      // filter by specific date
-      if (filterDate) {
-        filteredRecords = filteredRecords.filter(
-          (record) => record.date === filterDate
-        );
-      }
-
-      // apply search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredRecords = filteredRecords.filter(
-          (record) =>
-            record.citizenName.toLowerCase().includes(query) ||
-            record.citizenId.toLowerCase().includes(query) ||
-            record.provider.toLowerCase().includes(query) ||
-            record.vaccinationType.toLowerCase().includes(query) ||
-            record.division.toLowerCase().includes(query)
-        );
-      }
-
-      setRecords(filteredRecords);
+      const response = await api.get("/admin/vaccinations", { params });
+      setRecords(response.data);
       setCurrentPage(1);
       setHasAppliedFilter(true);
+    } catch (err) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch records. Please try again.",
+        variant: "destructive",
+      });
+      console.error(err);
+    } finally {
       setIsFilterLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -339,32 +177,72 @@ export default function ManageVaccinationRecords() {
     e.preventDefault();
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // citizen format check
+    if (!/^C\d{10}$/.test(formData.citizenId)) {
+      setCitizenError("Citizen ID must be “C” + 10 digits");
+      setIsLoading(false);
+      return;
+    }
+    setCitizenError("");
 
-    // add new record
-    const newRecord = {
-      citizenId: formData.citizenId,
-      citizenName: "New Citizen", // to be fetched
-      vaccinationType: formData.vaccinationType,
-      provider: formData.healthcareProvider,
-      location: formData.vaccinationLocation,
-      date: new Date().toISOString().split("T")[0],
-      division: formData.division,
-    };
+    // HCP format check
+    if (!/^HCP\d{10}$/.test(formData.healthcareProviderId)) {
+      setHealthcareProviderError("HCP ID must be “HCP” + 10 digits");
+      setIsLoading(false);
+      return;
+    }
 
-    // add to both the current filtered results and the master list
-    setRecords((prev) => [...prev, newRecord]);
-    allVaccinationRecords.push(newRecord);
+    // verify citizen exists
+    const citizenExists = await validateCitizen(formData.citizenId);
+    if (!citizenExists) {
+      setCitizenError("Citizen not found. Please enter a valid ID");
+      setIsLoading(false);
+      return;
+    }
+    setCitizenError("");
 
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+    // verify HCP exists
+    const hcpExists = await validateHCP(formData.healthcareProviderId);
+    if (!hcpExists) {
+      setHealthcareProviderError(
+        "Healthcare Provider not found. Please enter a valid ID"
+      );
+      setIsLoading(false);
+      return;
+    }
+    setHealthcareProviderError("");
 
-    toast({
-      title: "Vaccination Record Added Successfully",
-      description: "The vaccination record has been added to the system",
-    });
+    // checks passed - submit to add-vaccination
+    try {
+      const payload = {
+        citizenId: formData.citizenId,
+        vaccineId: formData.vaccinationType,
+        batchNumber: formData.batchNumber,
+        expiryDate: formData.expiryDate,
+        healthcareProviderId: formData.healthcareProviderId,
+        vaccinationLocation: formData.vaccinationLocation,
+        division: formData.division,
+        additionalNotes: formData.notes || "",
+      };
+
+      const { data } = await api.post("/admin/add-vaccination", payload);
+
+      setGeneratedVaccinationId(data.record.vaccinationId);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
+      toast({
+        title: "Vaccination Added",
+        description: `Record ${data.record.vaccinationId} created!`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to add record.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -377,11 +255,12 @@ export default function ManageVaccinationRecords() {
       vaccinationType: "",
       batchNumber: "",
       expiryDate: "",
-      healthcareProvider: "",
+      healthcareProviderId: "",
       vaccinationLocation: "",
       division: "",
       notes: "",
     });
+    setHealthcareProviderError("");
   };
 
   const getVaccineBadgeColor = (vaccine: string) => {
@@ -396,6 +275,24 @@ export default function ManageVaccinationRecords() {
     return (
       colors[vaccine as keyof typeof colors] || "bg-gray-100 text-gray-800"
     );
+  };
+
+  const validateCitizen = async (citizenId: string): Promise<boolean> => {
+    try {
+      await api.get<unknown>(`/admin/patient/${citizenId}`);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const validateHCP = async (hcpId: string) => {
+    try {
+      await api.get<unknown>(`/admin/hcp/${hcpId}`);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (
@@ -434,19 +331,34 @@ export default function ManageVaccinationRecords() {
                   <Input
                     id="citizenId"
                     value={formData.citizenId}
-                    onChange={(e) =>
-                      handleInputChange("citizenId", e.target.value)
-                    }
-                    placeholder="e.g., NB009"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange("citizenId", value);
+
+                      // validate citizen ID format
+                      if (value && !value.match(/^C\d{10}$/)) {
+                        setCitizenError(
+                          "Citizen ID must start with 'C' followed by 10 digits"
+                        );
+                      } else {
+                        setCitizenError("");
+                      }
+                    }}
+                    placeholder="e.g., C1234567890"
+                    pattern="^C\d{10}$"
                     required
                   />
+                  {citizenError && (
+                    <p className="text-sm text-red-600">{citizenError}</p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="vaccinationType">Vaccination Type *</Label>
                   <Select
                     value={formData.vaccinationType}
-                    onValueChange={(value) =>
-                      handleInputChange("vaccinationType", value)
+                    onValueChange={(val) =>
+                      handleInputChange("vaccinationType", val)
                     }
                     required
                   >
@@ -454,9 +366,9 @@ export default function ManageVaccinationRecords() {
                       <SelectValue placeholder="Select vaccine type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vaccineTypes.map((vaccine) => (
-                        <SelectItem key={vaccine} value={vaccine}>
-                          {vaccine}
+                      {vaccines.map((v) => (
+                        <SelectItem key={v.vaccineId} value={v.vaccineId}>
+                          {v.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -487,50 +399,48 @@ export default function ManageVaccinationRecords() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="healthcareProvider">
-                    Healthcare Provider Name *
+                  <Label htmlFor="healthcareProviderId">
+                    Healthcare Provider ID *
                   </Label>
-                  <Select
-                    value={formData.healthcareProvider}
-                    onValueChange={(value) =>
-                      handleInputChange("healthcareProvider", value)
-                    }
+                  <Input
+                    id="healthcareProviderId"
+                    value={formData.healthcareProviderId}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange("healthcareProviderId", value);
+
+                      // validate HCP ID format
+                      if (value && !value.match(/^HCP\d{10}$/)) {
+                        setHealthcareProviderError(
+                          "Healthcare Provider ID must start with 'HCP' followed by 10 digits"
+                        );
+                      } else {
+                        setHealthcareProviderError("");
+                      }
+                    }}
+                    placeholder="e.g., HCP1234567890"
+                    pattern="^HCP\d{10}$"
                     required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select healthcare provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {healthcareProviders.map((provider) => (
-                        <SelectItem key={provider} value={provider}>
-                          {provider}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
+                  {healthcareProviderError && (
+                    <p className="text-sm text-red-600">
+                      {healthcareProviderError}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="vaccinationLocation">
                     Vaccination Location *
                   </Label>
-                  <Select
+                  <Input
+                    id="vaccinationLocation"
                     value={formData.vaccinationLocation}
-                    onValueChange={(value) =>
-                      handleInputChange("vaccinationLocation", value)
+                    onChange={(e) =>
+                      handleInputChange("vaccinationLocation", e.target.value)
                     }
+                    placeholder="e.g., Colombo General Hospital"
                     required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vaccinationLocations.map((location) => (
-                        <SelectItem key={location} value={location}>
-                          {location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="division">Division *</Label>
@@ -596,59 +506,14 @@ export default function ManageVaccinationRecords() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* location Filter */}
+              {/* Location Filter */}
               <div className="space-y-2">
                 <Label>Location (Optional)</Label>
-                <Popover
-                  open={openFilterLocation}
-                  onOpenChange={setOpenFilterLocation}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openFilterLocation}
-                      className="w-full justify-between bg-transparent"
-                    >
-                      {filterLocation || "Select location..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search location..." />
-                      <CommandList>
-                        <CommandEmpty>No location found.</CommandEmpty>
-                        <CommandGroup>
-                          {vaccinationLocations.map((location) => (
-                            <CommandItem
-                              key={location}
-                              value={location}
-                              onSelect={(currentValue) => {
-                                const selectedLocation =
-                                  currentValue === filterLocation
-                                    ? ""
-                                    : currentValue;
-                                setFilterLocation(selectedLocation);
-                                setOpenFilterLocation(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  filterLocation === location
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {location}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Input
+                  placeholder="e.g., Colombo General Hospital"
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                />
               </div>
 
               {/* date filter */}
@@ -792,16 +657,16 @@ export default function ManageVaccinationRecords() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="whitespace-nowrap">
+                            Vaccination ID
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Citizen ID
                           </TableHead>
-                          <TableHead className="whitespace-nowrap">
-                            Citizen Name
+                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                            Vaccine ID
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
-                            Vaccination Type
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell whitespace-nowrap">
-                            Healthcare Provider
+                            Healthcare Provider ID
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Location
@@ -821,33 +686,38 @@ export default function ManageVaccinationRecords() {
                         {currentRecords.map((record, index) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium whitespace-nowrap">
+                              {record.vaccinationId}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
                               {record.citizenId}
                             </TableCell>
-                            <TableCell>{record.citizenName}</TableCell>
                             <TableCell className="hidden md:table-cell">
                               <Badge
                                 className={getVaccineBadgeColor(
-                                  record.vaccinationType
+                                  record.vaccineId
                                 )}
                               >
-                                {record.vaccinationType}
+                                {record.vaccineId}
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="max-w-[120px] truncate">
-                                {record.provider}
+                                {record.healthcareProviderId}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <div className="max-w-[120px] truncate">
-                                {record.location}
+                                {record.vaccinationLocation}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {record.division}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {record.date}
+                              {format(
+                                new Date(record.createdAt),
+                                "dd MMM yyyy, h:mm a"
+                              )}
                             </TableCell>
                             <TableCell>
                               <Button
@@ -917,6 +787,15 @@ export default function ManageVaccinationRecords() {
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
+                      <Label className="text-sm font-medium">
+                        Vaccination ID
+                      </Label>
+                      <p className="text-sm">{selectedRecord.vaccinationId}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
                       <Label className="text-sm font-medium">Citizen ID</Label>
                       <p className="text-sm">{selectedRecord.citizenId}</p>
                     </div>
@@ -924,24 +803,13 @@ export default function ManageVaccinationRecords() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">
-                        Citizen Name
-                      </Label>
-                      <p className="text-sm">{selectedRecord.citizenName}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">
-                        Vaccination Type
-                      </Label>
+                      <Label className="text-sm font-medium">Vaccine ID</Label>
                       <Badge
                         className={getVaccineBadgeColor(
-                          selectedRecord.vaccinationType
+                          selectedRecord.vaccineId
                         )}
                       >
-                        {selectedRecord.vaccinationType}
+                        {selectedRecord.vaccineId}
                       </Badge>
                     </div>
                   </div>
@@ -949,9 +817,11 @@ export default function ManageVaccinationRecords() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">
-                        Healthcare Provider
+                        Healthcare Provider ID
                       </Label>
-                      <p className="text-sm">{selectedRecord.provider}</p>
+                      <p className="text-sm">
+                        {selectedRecord.healthcareProviderId}
+                      </p>
                     </div>
                   </div>
 
@@ -960,7 +830,9 @@ export default function ManageVaccinationRecords() {
                       <Label className="text-sm font-medium">
                         Vaccination Location
                       </Label>
-                      <p className="text-sm">{selectedRecord.location}</p>
+                      <p className="text-sm">
+                        {selectedRecord.vaccinationLocation}
+                      </p>
                     </div>
                   </div>
 
@@ -976,7 +848,12 @@ export default function ManageVaccinationRecords() {
                       <Label className="text-sm font-medium">
                         Vaccination Date
                       </Label>
-                      <p className="text-sm">{selectedRecord.date}</p>
+                      <p className="text-sm">
+                        {format(
+                          new Date(selectedRecord.createdAt),
+                          "dd MMM yyyy, h:mm a"
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1006,6 +883,13 @@ export default function ManageVaccinationRecords() {
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium">Vaccination ID</p>
+                  <p className="text-sm text-gray-600">
+                    {generatedVaccinationId}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">Citizen ID</p>
                   <p className="text-sm text-gray-600">{formData.citizenId}</p>
                 </div>
@@ -1015,7 +899,7 @@ export default function ManageVaccinationRecords() {
                   <Badge
                     className={getVaccineBadgeColor(formData.vaccinationType)}
                   >
-                    {formData.vaccinationType}
+                    {vacName}
                   </Badge>
                 </div>
 
@@ -1027,9 +911,9 @@ export default function ManageVaccinationRecords() {
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">Healthcare Provider</p>
+                  <p className="text-sm font-medium">Healthcare Provider ID</p>
                   <p className="text-sm text-gray-600">
-                    {formData.healthcareProvider}
+                    {formData.healthcareProviderId}
                   </p>
                 </div>
 

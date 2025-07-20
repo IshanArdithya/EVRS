@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
@@ -15,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield } from "lucide-react";
+import api from "@/lib/api";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,16 +28,12 @@ export default function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/auth/get/citizen", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (res.ok) {
-          router.replace("/dashboard");
+        await api.get("/auth/get/citizen");
+        router.replace("/dashboard");
+      } catch (err: any) {
+        if (!err.response || err.response.status !== 401) {
+          console.error("Session check error:", err);
         }
-      } catch (err) {
-        console.error("Session check failed:", err);
       }
     };
 
@@ -52,29 +50,13 @@ export default function LoginPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login/citizen", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          citizenId: citizenId,
-          password: password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Login failed. Please try again.");
-      } else {
-        // can optionally store user info in state/context
-        router.push("/dashboard");
-      }
-    } catch (err) {
+      await api.post("/auth/login/citizen", { citizenId, password });
+      router.replace("/dashboard");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
       console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
     }
   };
 

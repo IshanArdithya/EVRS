@@ -30,6 +30,13 @@ export const loginHCP = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    res.cookie("hcp_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(200).json({
       message: "Login successful",
       token,
@@ -42,5 +49,27 @@ export const loginHCP = async (req, res) => {
   } catch (error) {
     console.error("HCP login error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const logoutHCP = (req, res) => {
+  res.clearCookie("hcp_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const getHCPProfile = (req, res) => {
+  const token = req.cookies.hcp_token;
+
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.status(200).json({ loggedIn: true, hcp: decoded });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
   }
 };

@@ -12,9 +12,9 @@ function generateRandomPassword(length = 10) {
 }
 
 export const registerMOH = async (req, res) => {
-  const { mohName, contactNumber, email, province, district } = req.body;
+  const { name, contactNo, email, province, district } = req.body;
 
-  if (!mohName || !contactNumber || !email || !province || !district) {
+  if (!name || !contactNo || !email || !province || !district) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -31,8 +31,8 @@ export const registerMOH = async (req, res) => {
 
     const newMoh = await MOH.create({
       mohId: generateMohId(),
-      mohName,
-      contactNumber,
+      name,
+      contactNo,
       email,
       province,
       district,
@@ -44,8 +44,8 @@ export const registerMOH = async (req, res) => {
       moh: {
         id: newMoh._id,
         mohId: newMoh.mohId,
-        mohName: newMoh.mohName,
-        contactNumber: newMoh.contactNumber,
+        name: newMoh.name,
+        contactNo: newMoh.contactNo,
         email: newMoh.email,
         province: newMoh.province,
         district: newMoh.district,
@@ -60,7 +60,32 @@ export const registerMOH = async (req, res) => {
 
 export const getAllMOHs = async (req, res) => {
   try {
-    const mohs = await MOH.find().select("-password").sort({ createdAt: -1 });
+    const { province, district, search } = req.query;
+
+    const filter = {};
+
+    if (province) {
+      filter.province = province;
+    }
+
+    if (district) {
+      filter.district = district;
+    }
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { name: regex },
+        { email: regex },
+        { mohId: regex },
+        { district: regex },
+      ];
+    }
+
+    const mohs = await MOH.find(filter)
+      .select("-password")
+      .sort({ createdAt: -1 });
+
     res.status(200).json(mohs);
   } catch (error) {
     console.error("Get all MOHs error:", error);
@@ -87,7 +112,7 @@ export const getMOHById = async (req, res) => {
 
 export const updateMOHById = async (req, res) => {
   try {
-    const { mohName, contactNumber, email, province, district } = req.body;
+    const { name, contactNo, email, province, district } = req.body;
 
     const moh = await MOH.findOne({ mohId: req.params.mohId });
 
@@ -95,8 +120,8 @@ export const updateMOHById = async (req, res) => {
       return res.status(404).json({ message: "MOH not found" });
     }
 
-    moh.mohName = mohName || moh.mohName;
-    moh.contactNumber = contactNumber || moh.contactNumber;
+    moh.name = name || moh.name;
+    moh.contactNo = contactNo || moh.contactNo;
     moh.email = email || moh.email;
     moh.province = province || moh.province;
     moh.district = district || moh.district;

@@ -7,11 +7,11 @@ const mohSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    mohName: {
+    name: {
       type: String,
       required: true,
     },
-    contactNumber: {
+    contactNo: {
       type: String,
       required: true,
     },

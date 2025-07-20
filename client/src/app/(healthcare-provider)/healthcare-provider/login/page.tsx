@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -16,34 +17,58 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Stethoscope, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function HealthcareProviderLogin() {
   const [credentials, setCredentials] = useState({
-    email: "",
+    hcpId: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await api.get("/auth/get/hcp");
+        if (res.status === 200) {
+          router.replace("/healthcare-provider/dashboard");
+        }
+      } catch (err: any) {
+        if (err.response?.status !== 401) {
+          console.error("Session check error:", err);
+        }
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    setIsLoading(true);
 
-    // simulate auth
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (
-      credentials.email === "hp@gmail.com" &&
-      credentials.password === "hp123"
-    ) {
-      localStorage.setItem("providerAuth", "true");
-      router.push("/healthcare-provider/dashboard");
-    } else {
-      setError("Invalid credentials. Please try again.");
+    const { hcpId, password } = credentials;
+    if (!hcpId || !password) {
+      setError("Please fill in all fields.");
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      await api.post("/auth/login/hcp", { hcpId, password });
+
+      router.replace("/healthcare-provider/dashboard");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
+      console.error("HCP login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,17 +84,17 @@ export default function HealthcareProviderLogin() {
           <CardDescription>Sign in to access the EVRS system</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="hcpId">HCP ID</Label>
               <Input
-                id="email"
+                id="hcpId"
                 type="text"
-                value={credentials.email}
+                value={credentials.hcpId}
                 onChange={(e) =>
-                  setCredentials({ ...credentials, email: e.target.value })
+                  setCredentials({ ...credentials, hcpId: e.target.value })
                 }
-                placeholder="Enter your email"
+                placeholder="Enter your HCP ID"
                 required
               />
             </div>
@@ -106,14 +131,6 @@ export default function HealthcareProviderLogin() {
               )}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              Demo Credentials:
-            </p>
-            <p className="text-sm font-mono text-center">
-              hp@gmail.com / hp123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

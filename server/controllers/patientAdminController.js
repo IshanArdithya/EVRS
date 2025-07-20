@@ -157,9 +157,32 @@ export const deletePatientByCitizenId = async (req, res) => {
 
 export const getAllPatients = async (req, res) => {
   try {
-    const patients = await Patient.find()
+    const { district, division, search } = req.query;
+
+    const filter = {};
+
+    if (district) {
+      filter.district = district;
+    }
+
+    if (division) {
+      filter.division = { $regex: new RegExp(division, "i") };
+    }
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { name: regex },
+        { patientId: regex },
+        { district: regex },
+        { division: regex },
+      ];
+    }
+
+    const patients = await Patient.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
+
     res.status(200).json(patients);
   } catch (error) {
     console.error("Get all patients error:", error);

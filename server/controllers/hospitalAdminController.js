@@ -58,9 +58,28 @@ export const registerHospital = async (req, res) => {
 
 export const getAllHospitals = async (req, res) => {
   try {
-    const hospitals = await Hospital.find()
+    const { province, district, search } = req.query;
+
+    // Build filter object based on query params
+    const filter = {};
+
+    if (province) {
+      filter.province = province;
+    }
+
+    if (district) {
+      filter.district = district;
+    }
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [{ name: regex }, { email: regex }, { hospitalId: regex }];
+    }
+
+    const hospitals = await Hospital.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
+
     res.status(200).json(hospitals);
   } catch (error) {
     console.error("Get all hospitals error:", error);

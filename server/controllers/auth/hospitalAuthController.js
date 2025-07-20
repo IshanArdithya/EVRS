@@ -30,6 +30,13 @@ export const loginHospital = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    res.cookie("hospital_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(200).json({
       message: "Login successful",
       token,
@@ -44,5 +51,27 @@ export const loginHospital = async (req, res) => {
   } catch (error) {
     console.error("Hospital login error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const logoutHospital = (req, res) => {
+  res.clearCookie("hospital_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const getHospitalProfile = (req, res) => {
+  const token = req.cookies.hospital_token;
+
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.status(200).json({ loggedIn: true, hospital: decoded });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
   }
 };

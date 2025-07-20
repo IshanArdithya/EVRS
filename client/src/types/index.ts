@@ -56,3 +56,31 @@ export type MohQA = {
   icon: React.ElementType;
   color: string;
 };
+
+export interface Vaccine {
+  _id: string;
+  vaccineId: string;
+  name: string;
+  sideEffects?: string;
+}
+
+export interface VaccinationRecord {
+  vaccinationId: string;
+  citizenId: string;
+  vaccineId: string;
+  citizenName: string;
+  healthcareProviderId: string;
+  vaccinationType: string;
+  provider: string;
+  location: string;
+  vaccinationLocation: string;
+  createdAt: string;
+  division: string;
+}
+
+export interface allVaccines {
+  vaccineId: string;
+  name: string;
+  sideEffects: string;
+  createdAt: string;
+}

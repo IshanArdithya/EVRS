@@ -9,7 +9,7 @@ const hcpSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["doctor", "nurse"],
+      enum: ["doctor", "nurse", "midwife"],
       required: true,
     },
     fullName: {

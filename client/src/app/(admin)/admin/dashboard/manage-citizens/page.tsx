@@ -68,6 +68,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 const sriLankanDistricts = [
   "Ampara",
@@ -97,112 +98,20 @@ const sriLankanDistricts = [
   "Vavuniya",
 ];
 
-// mock data
-const allCitizens = [
-  {
-    id: "NB001",
-    name: "Amal Perera",
-    district: "Colombo",
-    division: "Colombo 01",
-  },
-  {
-    id: "NB002",
-    name: "Sahan Silva",
-    district: "Kandy",
-    division: "Kandy Central",
-  },
-  {
-    id: "NB003",
-    name: "Nimal Fernando",
-    district: "Galle",
-    division: "Galle Fort",
-  },
-  {
-    id: "NB004",
-    name: "Kamala Jayawardena",
-    district: "Anuradhapura",
-    division: "Anuradhapura East",
-  },
-  {
-    id: "NB005",
-    name: "Priya Wickramasinghe",
-    district: "Badulla",
-    division: "Badulla Town",
-  },
-  {
-    id: "NB006",
-    name: "Rohan Dias",
-    district: "Jaffna",
-    division: "Jaffna Central",
-  },
-  {
-    id: "NB007",
-    name: "Sanduni Rajapaksa",
-    district: "Matara",
-    division: "Matara South",
-  },
-  {
-    id: "NB008",
-    name: "Thilina Gunasekara",
-    district: "Ratnapura",
-    division: "Ratnapura City",
-  },
-  {
-    id: "NB009",
-    name: "Malini Wijesinghe",
-    district: "Colombo",
-    division: "Colombo 02",
-  },
-  {
-    id: "NB010",
-    name: "Kasun Mendis",
-    district: "Gampaha",
-    division: "Negombo",
-  },
-  {
-    id: "NB011",
-    name: "Dilani Perera",
-    district: "Kalutara",
-    division: "Kalutara North",
-  },
-  {
-    id: "NB012",
-    name: "Nuwan Bandara",
-    district: "Kandy",
-    division: "Peradeniya",
-  },
-  {
-    id: "NB013",
-    name: "Chamari Silva",
-    district: "Matale",
-    division: "Matale Central",
-  },
-  {
-    id: "NB014",
-    name: "Ruwan Jayasuriya",
-    district: "Nuwara Eliya",
-    division: "Nuwara Eliya Town",
-  },
-  {
-    id: "NB015",
-    name: "Sachini Fernando",
-    district: "Batticaloa",
-    division: "Batticaloa Central",
-  },
-];
-
 export default function ManageCitizens() {
-  const [citizens, setCitizens] = useState<typeof allCitizens>([]);
+  const [citizens, setCitizens] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedField, setCopiedField] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [generatedPassword, setGeneratedPassword] = useState("");
+  const [generatedCitizenId, setGeneratedCitizenId] = useState("");
   const [formData, setFormData] = useState({
     id: "",
     serialNumber: "",
-    name: "",
+    firstName: "",
+    lastName: "",
     birthDate: "",
     district: "",
     division: "",
@@ -227,18 +136,8 @@ export default function ManageCitizens() {
   const endIndex = startIndex + itemsPerPage;
   const currentCitizens = citizens.slice(startIndex, endIndex);
 
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let password = "";
-    for (let i = 0; i < 10; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     if (!filterDistrict && !filterDivision.trim() && !searchQuery.trim()) {
       toast({
         title: "Filter Required",
@@ -251,42 +150,27 @@ export default function ManageCitizens() {
 
     setIsFilterLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredCitizens = allCitizens;
+    try {
+      const params: Record<string, string> = {};
+      if (filterDistrict) params.district = filterDistrict;
+      if (filterDivision.trim()) params.division = filterDivision.trim();
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      // filter by district
-      if (filterDistrict) {
-        filteredCitizens = filteredCitizens.filter(
-          (citizen) => citizen.district === filterDistrict
-        );
-      }
+      const response = await api.get("/admin/patients", { params });
 
-      // filter by division
-      if (filterDivision.trim()) {
-        const divisionQuery = filterDivision.toLowerCase();
-        filteredCitizens = filteredCitizens.filter((citizen) =>
-          citizen.division.toLowerCase().includes(divisionQuery)
-        );
-      }
-
-      // apply search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredCitizens = filteredCitizens.filter(
-          (citizen) =>
-            citizen.name.toLowerCase().includes(query) ||
-            citizen.id.toLowerCase().includes(query) ||
-            citizen.district.toLowerCase().includes(query) ||
-            citizen.division.toLowerCase().includes(query)
-        );
-      }
-
-      setCitizens(filteredCitizens);
+      setCitizens(response.data);
       setCurrentPage(1);
       setHasAppliedFilter(true);
+    } catch (error) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch filtered citizens. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
       setIsFilterLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -301,34 +185,69 @@ export default function ManageCitizens() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (
+      !formData.serialNumber ||
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.birthDate ||
+      !formData.district ||
+      !formData.division ||
+      !formData.guardianNic
+    ) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await api.post("/admin/register-patient", {
+        serialNumber: formData.serialNumber,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        birthDate: formData.birthDate,
+        district: formData.district,
+        division: formData.division,
+        guardianNIC: formData.guardianNic,
+      });
 
-    const password = generatePassword();
-    setGeneratedPassword(password);
+      const { patient, message } = response.data;
 
-    // add new citizen
-    const newCitizen = {
-      id: formData.id,
-      name: formData.name,
-      district: formData.district,
-      division: formData.division,
-    };
+      setGeneratedCitizenId(patient.citizenId);
+      setGeneratedPassword(patient.password);
 
-    // add to both the current filtered results and the master list
-    setCitizens((prev) => [...prev, newCitizen]);
-    allCitizens.push(newCitizen);
+      // setCitizens((prev) => [
+      //   ...prev,
+      //   {
+      //     ...formData,
+      //     id: patient._id,
+      //     citizenId: patient.citizenId,
+      //     status: "Active",
+      //     createdDate: new Date().toISOString().split("T")[0],
+      //   },
+      // ]);
 
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
 
-    toast({
-      title: "Citizen Account Created Successfully",
-      description: "The newborn citizen account has been created",
-    });
+      toast({
+        title: "Citizen Added Successfully",
+        description: message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add Citizen",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -349,7 +268,8 @@ export default function ManageCitizens() {
     setFormData({
       id: "",
       serialNumber: "",
-      name: "",
+      firstName: "",
+      lastName: "",
       birthDate: "",
       district: "",
       division: "",
@@ -413,39 +333,43 @@ export default function ManageCitizens() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="id">Unique ID *</Label>
-                    <Input
-                      id="id"
-                      value={formData.id}
-                      onChange={(e) => handleInputChange("id", e.target.value)}
-                      placeholder="e.g., NB009"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="serialNumber">Serial Number *</Label>
-                    <Input
-                      id="serialNumber"
-                      value={formData.serialNumber}
-                      onChange={(e) =>
-                        handleInputChange("serialNumber", e.target.value)
-                      }
-                      placeholder="e.g., SN001234"
-                      required
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
+                  <Label htmlFor="serialNumber">Serial Number *</Label>
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="e.g., Amal Perera"
+                    id="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={(e) =>
+                      handleInputChange("serialNumber", e.target.value)
+                    }
+                    placeholder="e.g., SN001234"
                     required
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) =>
+                        handleInputChange("firstName", e.target.value)
+                      }
+                      placeholder="e.g., Amal"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) =>
+                        handleInputChange("lastName", e.target.value)
+                      }
+                      placeholder="e.g., Perera"
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="birthDate">Birth Date *</Label>
@@ -459,7 +383,7 @@ export default function ManageCitizens() {
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="district">District *</Label>
                     <Select
@@ -749,7 +673,10 @@ export default function ManageCitizens() {
                             ID
                           </TableHead>
                           <TableHead className="whitespace-nowrap">
-                            Name
+                            First Name
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap">
+                            Last Name
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             District
@@ -767,11 +694,16 @@ export default function ManageCitizens() {
                       </TableHeader>
                       <TableBody>
                         {currentCitizens.map((citizen) => (
-                          <TableRow key={citizen.id}>
+                          <TableRow key={citizen.citizenId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {citizen.id}
+                              {citizen.citizenId}
                             </TableCell>
-                            <TableCell className="">{citizen.name}</TableCell>
+                            <TableCell className="">
+                              {citizen.firstName}
+                            </TableCell>
+                            <TableCell className="">
+                              {citizen.lastName}
+                            </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {citizen.district}
                             </TableCell>
@@ -860,14 +792,21 @@ export default function ManageCitizens() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Citizen ID</Label>
-                      <p className="text-sm">{selectedCitizen.id}</p>
+                      <p className="text-sm">{selectedCitizen.citizenId}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">Full Name</Label>
-                      <p className="text-sm">{selectedCitizen.name}</p>
+                      <Label className="text-sm font-medium">First Name</Label>
+                      <p className="text-sm">{selectedCitizen.firstName}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Last Name</Label>
+                      <p className="text-sm">{selectedCitizen.lastName}</p>
                     </div>
                   </div>
 
@@ -919,15 +858,19 @@ export default function ManageCitizens() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Unique ID</p>
-                    <p className="text-sm text-gray-600">{formData.id}</p>
+                    <p className="text-sm font-medium">Citizen ID</p>
+                    <p className="text-sm text-gray-600">
+                      {generatedCitizenId}
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(formData.id, "Unique ID")}
+                    onClick={() =>
+                      copyToClipboard(generatedCitizenId, "Citizen ID")
+                    }
                   >
-                    {copiedField === "Unique ID" ? (
+                    {copiedField === "Citizen ID" ? (
                       <Check className="h-4 w-4" />
                     ) : (
                       <Copy className="h-4 w-4" />
@@ -937,8 +880,17 @@ export default function ManageCitizens() {
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Name</p>
-                    <p className="text-sm text-gray-600">{formData.name}</p>
+                    <p className="text-sm font-medium">First Name</p>
+                    <p className="text-sm text-gray-600">
+                      {formData.firstName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Last Name</p>
+                    <p className="text-sm text-gray-600">{formData.lastName}</p>
                   </div>
                 </div>
 

@@ -64,8 +64,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
+import { format } from "date-fns";
 
-// Province and District data
+// province and district data
 const provinceDistrictData = {
   Western: ["Colombo", "Gampaha", "Kalutara"],
   Central: ["Kandy", "Matale", "Nuwara Eliya"],
@@ -80,172 +82,6 @@ const provinceDistrictData = {
 
 const provinces = Object.keys(provinceDistrictData);
 
-// mock data
-const allHospitalsData = [
-  {
-    id: "H001",
-    name: "Colombo General Hospital",
-    email: "admin@cgh.lk",
-    province: "Western",
-    district: "Colombo",
-    status: "Active",
-    createdDate: "2024-01-15",
-  },
-  {
-    id: "H002",
-    name: "Lady Ridgeway Hospital",
-    email: "admin@lrh.lk",
-    province: "Western",
-    district: "Colombo",
-    status: "Active",
-    createdDate: "2024-01-20",
-  },
-  {
-    id: "H003",
-    name: "National Hospital of Sri Lanka",
-    email: "admin@nhsl.lk",
-    province: "Western",
-    district: "Colombo",
-    status: "Active",
-    createdDate: "2024-01-25",
-  },
-  {
-    id: "H004",
-    name: "District General Hospital Gampaha",
-    email: "admin@dghg.lk",
-    province: "Western",
-    district: "Gampaha",
-    status: "Active",
-    createdDate: "2024-02-01",
-  },
-  {
-    id: "H005",
-    name: "Base Hospital Negombo",
-    email: "admin@bhn.lk",
-    province: "Western",
-    district: "Gampaha",
-    status: "Inactive",
-    createdDate: "2024-02-05",
-  },
-  {
-    id: "H006",
-    name: "Base Hospital Kalutara",
-    email: "admin@bhk.lk",
-    province: "Western",
-    district: "Kalutara",
-    status: "Active",
-    createdDate: "2024-02-10",
-  },
-  {
-    id: "H007",
-    name: "District General Hospital Kalutara",
-    email: "admin@dghk.lk",
-    province: "Western",
-    district: "Kalutara",
-    status: "Active",
-    createdDate: "2024-02-15",
-  },
-  {
-    id: "H008",
-    name: "Teaching Hospital Kandy",
-    email: "admin@thk.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
-    createdDate: "2024-02-20",
-  },
-  {
-    id: "H009",
-    name: "Peradeniya Teaching Hospital",
-    email: "admin@pth.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
-    createdDate: "2024-02-25",
-  },
-  {
-    id: "H010",
-    name: "Sirimavo Bandaranaike Specialized Children's Hospital",
-    email: "admin@sbsch.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
-    createdDate: "2024-03-01",
-  },
-  {
-    id: "H011",
-    name: "District General Hospital Matale",
-    email: "admin@dghm.lk",
-    province: "Central",
-    district: "Matale",
-    status: "Active",
-    createdDate: "2024-03-05",
-  },
-  {
-    id: "H012",
-    name: "Base Hospital Nuwara Eliya",
-    email: "admin@bhne.lk",
-    province: "Central",
-    district: "Nuwara Eliya",
-    status: "Inactive",
-    createdDate: "2024-03-10",
-  },
-  {
-    id: "H013",
-    name: "Teaching Hospital Karapitiya",
-    email: "admin@thkar.lk",
-    province: "Southern",
-    district: "Galle",
-    status: "Active",
-    createdDate: "2024-03-15",
-  },
-  {
-    id: "H014",
-    name: "Base Hospital Galle",
-    email: "admin@bhg.lk",
-    province: "Southern",
-    district: "Galle",
-    status: "Active",
-    createdDate: "2024-03-20",
-  },
-  {
-    id: "H015",
-    name: "Base Hospital Matara",
-    email: "admin@bhm.lk",
-    province: "Southern",
-    district: "Matara",
-    status: "Active",
-    createdDate: "2024-03-25",
-  },
-  {
-    id: "H016",
-    name: "District General Hospital Hambantota",
-    email: "admin@dghh.lk",
-    province: "Southern",
-    district: "Hambantota",
-    status: "Active",
-    createdDate: "2024-04-01",
-  },
-  {
-    id: "H017",
-    name: "Teaching Hospital Jaffna",
-    email: "admin@thj.lk",
-    province: "Northern",
-    district: "Jaffna",
-    status: "Active",
-    createdDate: "2024-04-05",
-  },
-  {
-    id: "H018",
-    name: "Base Hospital Batticaloa",
-    email: "admin@bhb.lk",
-    province: "Eastern",
-    district: "Batticaloa",
-    status: "Active",
-    createdDate: "2024-04-10",
-  },
-];
-
 export default function ManageHospitals() {
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -256,6 +92,8 @@ export default function ManageHospitals() {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<any>(null);
+
+  const [generatedHospitalId, setGeneratedHospitalId] = useState("");
 
   // filter states
   const [filterProvince, setFilterProvince] = useState("");
@@ -304,27 +142,8 @@ export default function ManageHospitals() {
       : [];
   };
 
-  // generate next Hospital ID
-  const generateHospitalId = () => {
-    const allIds = [...allHospitalsData, ...hospitals].map((hospital) =>
-      Number.parseInt(hospital.id.replace("H", ""))
-    );
-    const nextId = Math.max(...allIds) + 1;
-    return `H${nextId.toString().padStart(3, "0")}`;
-  };
-
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     if (!filterProvince && !searchQuery.trim()) {
       toast({
         title: "Filter Required",
@@ -337,40 +156,26 @@ export default function ManageHospitals() {
 
     setIsLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredHospitals = allHospitalsData;
+    try {
+      const params: Record<string, string> = {};
+      if (filterProvince) params.province = filterProvince;
+      if (filterDistrict) params.district = filterDistrict;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      // filter by province and district
-      if (filterProvince) {
-        filteredHospitals = filteredHospitals.filter(
-          (hospital) => hospital.province === filterProvince
-        );
-
-        if (filterDistrict) {
-          filteredHospitals = filteredHospitals.filter(
-            (hospital) => hospital.district === filterDistrict
-          );
-        }
-      }
-
-      // apply search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredHospitals = filteredHospitals.filter(
-          (hospital) =>
-            hospital.name.toLowerCase().includes(query) ||
-            hospital.email.toLowerCase().includes(query) ||
-            hospital.id.toLowerCase().includes(query) ||
-            hospital.district.toLowerCase().includes(query)
-        );
-      }
-
-      setHospitals(filteredHospitals);
+      const response = await api.get("/admin/hospitals", { params });
+      setHospitals(response.data);
       setCurrentPage(1);
       setHasAppliedFilter(true);
+    } catch (error) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch filtered hospitals. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -402,69 +207,46 @@ export default function ManageHospitals() {
 
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await api.post("/admin/register-hospital", {
+        name: formData.name,
+        email: formData.email,
+        province: formData.province,
+        district: formData.district,
+      });
 
-    const hospitalId = formData.id || generateHospitalId();
-    const password = generatePassword();
-    setGeneratedPassword(password);
+      const { hospital, message } = response.data;
 
-    // add new hospital to the current filtered list if it matches the current filter
-    const newHospital = {
-      ...formData,
-      id: hospitalId,
-      status: "Active",
-      createdDate: new Date().toISOString().split("T")[0],
-    };
+      setGeneratedHospitalId(hospital.hospitalId);
+      setGeneratedPassword(hospital.password);
 
-    // add to both the current filtered results and the master list
-    if (hasAppliedFilter) {
-      let shouldAddToResults = false;
+      setHospitals((prev) => [
+        ...prev,
+        {
+          ...formData,
+          id: hospital._id,
+          hospitalId: hospital.hospitalId,
+          status: "Active",
+          createdDate: new Date().toISOString().split("T")[0],
+        },
+      ]);
 
-      // check if new hospital matches current filters
-      if (filterProvince && !searchQuery.trim()) {
-        // province/district filter only
-        shouldAddToResults =
-          newHospital.province === filterProvince &&
-          (!filterDistrict || newHospital.district === filterDistrict);
-      } else if (!filterProvince && searchQuery.trim()) {
-        // search filter only
-        const query = searchQuery.toLowerCase();
-        shouldAddToResults =
-          newHospital.name.toLowerCase().includes(query) ||
-          newHospital.email.toLowerCase().includes(query) ||
-          newHospital.id.toLowerCase().includes(query) ||
-          newHospital.district.toLowerCase().includes(query);
-      } else if (filterProvince && searchQuery.trim()) {
-        // both province/district and search filters
-        const matchesLocation =
-          newHospital.province === filterProvince &&
-          (!filterDistrict || newHospital.district === filterDistrict);
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          newHospital.name.toLowerCase().includes(query) ||
-          newHospital.email.toLowerCase().includes(query) ||
-          newHospital.id.toLowerCase().includes(query) ||
-          newHospital.district.toLowerCase().includes(query);
-        shouldAddToResults = matchesLocation && matchesSearch;
-      }
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
 
-      if (shouldAddToResults) {
-        setHospitals([...hospitals, newHospital]);
-      }
+      toast({
+        title: "Hospital Added Successfully",
+        description: message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add Hospital",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    // add to master list
-    allHospitalsData.push(newHospital);
-
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-
-    toast({
-      title: "Hospital Added Successfully",
-      description: "The hospital account has been created",
-    });
   };
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -553,15 +335,6 @@ export default function ManageHospitals() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="id">Hospital ID (Optional)</Label>
-                  <Input
-                    id="id"
-                    value={formData.id}
-                    onChange={(e) => handleInputChange("id", e.target.value)}
-                    placeholder="Leave empty to auto-generate"
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Hospital Name *</Label>
                   <Input
@@ -1015,9 +788,9 @@ export default function ManageHospitals() {
                       </TableHeader>
                       <TableBody>
                         {currentHospitals.map((hospital) => (
-                          <TableRow key={hospital.id}>
+                          <TableRow key={hospital.hospitalId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {hospital.id}
+                              {hospital.hospitalId}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <div className="max-w-[150px] truncate">
@@ -1044,7 +817,10 @@ export default function ManageHospitals() {
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {hospital.createdDate}
+                              {format(
+                                new Date(hospital.createdAt),
+                                "dd MMM yyyy, h:mm a"
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1 md:space-x-2">
@@ -1133,7 +909,7 @@ export default function ManageHospitals() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Hospital ID</Label>
-                      <p className="text-sm">{selectedHospital.id}</p>
+                      <p className="text-sm">{selectedHospital.hospitalId}</p>
                     </div>
                   </div>
 
@@ -1189,7 +965,12 @@ export default function ManageHospitals() {
                       <Label className="text-sm font-medium">
                         Created Date
                       </Label>
-                      <p className="text-sm">{selectedHospital.createdDate}</p>
+                      <p className="text-sm">
+                        {format(
+                          new Date(selectedHospital.createdAt),
+                          "dd MMM yyyy, h:mm a"
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1221,12 +1002,16 @@ export default function ManageHospitals() {
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium">Hospital ID</p>
-                    <p className="text-sm text-gray-600">{formData.id}</p>
+                    <p className="text-sm text-gray-600">
+                      {generatedHospitalId}
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(formData.id, "Hospital ID")}
+                    onClick={() =>
+                      copyToClipboard(generatedHospitalId, "Hospital ID")
+                    }
                   >
                     {copiedField === "Hospital ID" ? (
                       <Check className="h-4 w-4 text-green-600" />

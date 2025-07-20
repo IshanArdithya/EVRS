@@ -18,10 +18,10 @@ export const registerHCP = async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  if (!["doctor", "nurse"].includes(role.toLowerCase())) {
+  if (!["doctor", "nurse", "midwife"].includes(role.toLowerCase())) {
     return res
       .status(400)
-      .json({ message: "Role must be either doctor or nurse" });
+      .json({ message: "Role must be either doctor, nurse or midwife" });
   }
 
   try {
@@ -64,9 +64,28 @@ export const registerHCP = async (req, res) => {
 
 export const getAllHCPs = async (req, res) => {
   try {
-    const hcps = await HealthcareProvider.find()
+    const { role, search } = req.query;
+
+    const filter = {};
+
+    if (role) {
+      filter.role = role;
+    }
+
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { name: regex },
+        { email: regex },
+        { hcpId: regex },
+        { role: regex },
+      ];
+    }
+
+    const hcps = await HealthcareProvider.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
+
     res.status(200).json(hcps);
   } catch (error) {
     console.error("Get all HCPs error:", error);

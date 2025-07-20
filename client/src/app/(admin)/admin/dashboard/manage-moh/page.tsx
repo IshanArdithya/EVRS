@@ -2,9 +2,28 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState } from "react";
+import type React from "react";
+
+import { useState, useEffect } from "react";
+import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -14,16 +33,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -38,24 +47,27 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Building2,
   Plus,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Edit,
-  Trash2,
   Copy,
   Check,
-  ChevronsUpDown,
-  Search,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
   Filter,
-  Building2,
+  Search,
+  ChevronsUpDown,
+  Edit,
+  Trash2,
+  Eye,
 } from "lucide-react";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
+import { format } from "date-fns";
 
-const provincesData = {
+// province and district data
+const provinceDistrictData = {
   Western: ["Colombo", "Gampaha", "Kalutara"],
   Central: ["Kandy", "Matale", "Nuwara Eliya"],
   Southern: ["Galle", "Matara", "Hambantota"],
@@ -67,127 +79,20 @@ const provincesData = {
   Sabaragamuwa: ["Ratnapura", "Kegalle"],
 };
 
-const provinces = Object.keys(provincesData);
+const provinces = Object.keys(provinceDistrictData);
 
-// mock data
-const allMohAccounts = [
-  {
-    id: "MOH001",
-    name: "MOH-Colombo",
-    contactNo: "+94 77 123 4567",
-    email: "colombo@moh.gov.lk",
-    province: "Western",
-    district: "Colombo",
-    status: "Active",
-    createdDate: "2024-01-15",
-  },
-  {
-    id: "MOH002",
-    name: "MOH-Gampaha",
-    contactNo: "+94 71 234 5678",
-    email: "gampaha@moh.gov.lk",
-    province: "Western",
-    district: "Gampaha",
-    status: "Active",
-    createdDate: "2024-01-20",
-  },
-  {
-    id: "MOH003",
-    name: "MOH-Kalutara",
-    contactNo: "+94 76 345 6789",
-    email: "kalutara@moh.gov.lk",
-    province: "Western",
-    district: "Kalutara",
-    status: "Inactive",
-    createdDate: "2024-02-01",
-  },
-  {
-    id: "MOH004",
-    name: "MOH-Kandy",
-    contactNo: "+94 78 456 7890",
-    email: "kandy@moh.gov.lk",
-    province: "Central",
-    district: "Kandy",
-    status: "Active",
-    createdDate: "2024-02-10",
-  },
-  {
-    id: "MOH005",
-    name: "MOH-Matale",
-    contactNo: "+94 75 567 8901",
-    email: "matale@moh.gov.lk",
-    province: "Central",
-    district: "Matale",
-    status: "Active",
-    createdDate: "2024-02-15",
-  },
-  {
-    id: "MOH006",
-    name: "MOH-Nuwara Eliya",
-    contactNo: "+94 77 678 9012",
-    email: "nuwaraeliya@moh.gov.lk",
-    province: "Central",
-    district: "Nuwara Eliya",
-    status: "Active",
-    createdDate: "2024-02-20",
-  },
-  {
-    id: "MOH007",
-    name: "MOH-Galle",
-    contactNo: "+94 71 789 0123",
-    email: "galle@moh.gov.lk",
-    province: "Southern",
-    district: "Galle",
-    status: "Inactive",
-    createdDate: "2024-03-01",
-  },
-  {
-    id: "MOH008",
-    name: "MOH-Matara",
-    contactNo: "+94 76 890 1234",
-    email: "matara@moh.gov.lk",
-    province: "Southern",
-    district: "Matara",
-    status: "Active",
-    createdDate: "2024-03-05",
-  },
-  {
-    id: "MOH009",
-    name: "MOH-Jaffna",
-    contactNo: "+94 78 901 2345",
-    email: "jaffna@moh.gov.lk",
-    province: "Northern",
-    district: "Jaffna",
-    status: "Active",
-    createdDate: "2024-03-10",
-  },
-  {
-    id: "MOH010",
-    name: "MOH-Batticaloa",
-    contactNo: "+94 75 012 3456",
-    email: "batticaloa@moh.gov.lk",
-    province: "Eastern",
-    district: "Batticaloa",
-    status: "Active",
-    createdDate: "2024-03-15",
-  },
-];
-
-export default function ManageMOHPage() {
-  const [mohAccounts, setMohAccounts] = useState<typeof allMohAccounts>([]);
+export default function ManageMOH() {
+  const [mohAccounts, setMohAccounts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [newAccount, setNewAccount] = useState({
-    name: "",
-    contactNo: "",
-    email: "",
-    province: "",
-    district: "",
-  });
-  const [createdAccount, setCreatedAccount] = useState<any>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+
+  const [generatedMohId, setGeneratedMohId] = useState("");
 
   // filter states
   const [filterProvince, setFilterProvince] = useState("");
@@ -203,6 +108,15 @@ export default function ManageMOHPage() {
   const [openFormProvince, setOpenFormProvince] = useState(false);
   const [openFormDistrict, setOpenFormDistrict] = useState(false);
 
+  const [formData, setFormData] = useState({
+    name: "",
+    contactNo: "",
+    email: "",
+    province: "",
+    district: "",
+  });
+  const { toast } = useToast();
+
   const itemsPerPage = 5;
   const totalPages = Math.ceil(mohAccounts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -212,80 +126,55 @@ export default function ManageMOHPage() {
   // get districts for selected province (filter)
   const getFilterDistricts = () => {
     return filterProvince
-      ? provincesData[filterProvince as keyof typeof provincesData] || []
+      ? provinceDistrictData[
+          filterProvince as keyof typeof provinceDistrictData
+        ] || []
       : [];
   };
 
   // get districts for selected province (form)
   const getFormDistricts = () => {
-    return newAccount.province
-      ? provincesData[newAccount.province as keyof typeof provincesData] || []
+    return formData.province
+      ? provinceDistrictData[
+          formData.province as keyof typeof provinceDistrictData
+        ] || []
       : [];
   };
 
-  // generate next MOH ID
-  const generateMohId = () => {
-    const allIds = [...allMohAccounts, ...mohAccounts].map((account) =>
-      Number.parseInt(account.id.replace("MOH", ""))
-    );
-    const nextId = Math.max(...allIds) + 1;
-    return `MOH${nextId.toString().padStart(3, "0")}`;
-  };
-
-  // generate random password
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     if (!filterProvince && !searchQuery.trim()) {
-      toast.error("Please select a province or enter a search term");
+      toast({
+        title: "Filter Required",
+        description: "Please select a province or enter a search term",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredAccounts = allMohAccounts;
+    try {
+      const params: Record<string, string> = {};
+      if (filterProvince) params.province = filterProvince;
+      if (filterDistrict) params.district = filterDistrict;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      // filter by province and district
-      if (filterProvince) {
-        filteredAccounts = filteredAccounts.filter(
-          (account) => account.province === filterProvince
-        );
+      const response = await api.get("/admin/mohs", { params });
 
-        if (filterDistrict) {
-          filteredAccounts = filteredAccounts.filter(
-            (account) => account.district === filterDistrict
-          );
-        }
-      }
-
-      // apply search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredAccounts = filteredAccounts.filter(
-          (account) =>
-            account.name.toLowerCase().includes(query) ||
-            account.email.toLowerCase().includes(query) ||
-            account.id.toLowerCase().includes(query) ||
-            account.district.toLowerCase().includes(query)
-        );
-      }
-
-      setMohAccounts(filteredAccounts);
+      setMohAccounts(response.data);
       setCurrentPage(1);
       setHasAppliedFilter(true);
+    } catch (error) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch MOH accounts. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -298,58 +187,101 @@ export default function ManageMOHPage() {
     setCurrentPage(1);
   };
 
-  const handleAddAccount = () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (
-      !newAccount.name ||
-      !newAccount.contactNo ||
-      !newAccount.email ||
-      !newAccount.province ||
-      !newAccount.district
+      !formData.name ||
+      !formData.contactNo ||
+      !formData.email ||
+      !formData.province ||
+      !formData.district
     ) {
-      toast.error("Please fill in all fields");
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
-    const mohId = generateMohId();
-    const password = generatePassword();
+    setIsLoading(true);
 
-    const accountToAdd = {
-      id: mohId,
-      name: newAccount.name,
-      contactNo: newAccount.contactNo,
-      email: newAccount.email,
-      province: newAccount.province,
-      district: newAccount.district,
-      status: "Active",
-      createdDate: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const response = await api.post("/admin/register-moh", {
+        name: formData.name,
+        contactNo: formData.contactNo,
+        email: formData.email,
+        province: formData.province,
+        district: formData.district,
+      });
 
-    // add to both the current filtered results and the master list
-    setMohAccounts((prev) => [...prev, accountToAdd]);
-    allMohAccounts.push(accountToAdd);
+      const { moh, message } = response.data;
 
-    setCreatedAccount({ ...accountToAdd, password });
-    setNewAccount({
-      name: "",
-      contactNo: "",
-      email: "",
-      province: "",
-      district: "",
-    });
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
-    toast.success("MOH account created successfully!");
+      setGeneratedMohId(moh.mohId);
+      setGeneratedPassword(moh.password);
+
+      setMohAccounts((prev) => [
+        ...prev,
+        {
+          ...formData,
+          id: moh._id,
+          mohId: moh.mohId,
+          status: "Active",
+          createdDate: new Date().toISOString().split("T")[0],
+        },
+      ]);
+
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
+
+      toast({
+        title: "MOH Account Added Successfully",
+        description: message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add MOH Account",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
-      toast.success(`${field} copied to clipboard!`);
-      setTimeout(() => setCopiedField(null), 2000);
+      toast({
+        title: "Copied to clipboard",
+        description: `${field} has been copied`,
+      });
+      setTimeout(() => setCopiedField(""), 2000);
     } catch (err) {
-      toast.error("Failed to copy to clipboard");
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy to clipboard",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      contactNo: "",
+      email: "",
+      province: "",
+      district: "",
+    });
+    setGeneratedPassword("");
+    setCopiedField("");
   };
 
   // get active filter description
@@ -367,8 +299,11 @@ export default function ManageMOHPage() {
     return filters;
   };
 
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  useEffect(() => {
+    // fetch all MOH accounts initially
+    // const allAccounts = getAllMohAccounts();
+    // setMohAccounts(allAccounts);
+  }, []);
 
   const handleViewDetails = (account: any) => {
     setSelectedAccount(account);
@@ -384,13 +319,16 @@ export default function ManageMOHPage() {
               <Building2 className="w-8 h-8 mr-3 text-red-600" />
               Manage MOH
             </h1>
-            <p className="text-muted-foreground">
-              Manage Ministry of Health accounts and permissions
+            <p className="text-gray-600">
+              View and manage Ministry of Health accounts in the system
             </p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-red-600 hover:bg-red-700">
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={resetForm}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Register MOH Account
               </Button>
@@ -399,50 +337,46 @@ export default function ManageMOHPage() {
               <DialogHeader>
                 <DialogTitle>Register New MOH Account</DialogTitle>
                 <DialogDescription>
-                  Create a new Ministry of Health account. A secure password
+                  Enter the details for the new MOH account. A secure password
                   will be generated automatically.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">MOH Name</Label>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">MOH Name *</Label>
                   <Input
                     id="name"
-                    placeholder="Enter full name"
-                    value={newAccount.name}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, name: e.target.value })
-                    }
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="e.g., Dr. John Smith"
+                    required
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="contact">Contact Number</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="contactNo">Contact Number *</Label>
                   <Input
-                    id="contact"
-                    placeholder="+94 XX XXX XXXX"
-                    value={newAccount.contactNo}
+                    id="contactNo"
+                    value={formData.contactNo}
                     onChange={(e) =>
-                      setNewAccount({
-                        ...newAccount,
-                        contactNo: e.target.value,
-                      })
+                      handleInputChange("contactNo", e.target.value)
                     }
+                    placeholder="e.g., +94 77 123 4567"
+                    required
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email Address</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="name@moh.gov.lk"
-                    value={newAccount.email}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, email: e.target.value })
-                    }
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    placeholder="e.g., john.smith@moh.gov.lk"
+                    required
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label>Province</Label>
+                <div className="space-y-2">
+                  <Label>Province *</Label>
                   <Popover
                     open={openFormProvince}
                     onOpenChange={setOpenFormProvince}
@@ -452,9 +386,9 @@ export default function ManageMOHPage() {
                         variant="outline"
                         role="combobox"
                         aria-expanded={openFormProvince}
-                        className="justify-between bg-transparent"
+                        className="w-full justify-between bg-transparent"
                       >
-                        {newAccount.province || "Select province..."}
+                        {formData.province || "Select province..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -470,11 +404,11 @@ export default function ManageMOHPage() {
                                 value={province}
                                 onSelect={(currentValue) => {
                                   const selectedProvince =
-                                    currentValue === newAccount.province
+                                    currentValue === formData.province
                                       ? ""
                                       : currentValue;
-                                  setNewAccount({
-                                    ...newAccount,
+                                  setFormData({
+                                    ...formData,
                                     province: selectedProvince,
                                     district: "",
                                   });
@@ -484,7 +418,7 @@ export default function ManageMOHPage() {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    newAccount.province === province
+                                    formData.province === province
                                       ? "opacity-100"
                                       : "opacity-0"
                                   )}
@@ -498,8 +432,8 @@ export default function ManageMOHPage() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="grid gap-2">
-                  <Label>District</Label>
+                <div className="space-y-2">
+                  <Label>District *</Label>
                   <Popover
                     open={openFormDistrict}
                     onOpenChange={setOpenFormDistrict}
@@ -509,10 +443,10 @@ export default function ManageMOHPage() {
                         variant="outline"
                         role="combobox"
                         aria-expanded={openFormDistrict}
-                        className="justify-between bg-transparent"
-                        disabled={!newAccount.province}
+                        className="w-full justify-between bg-transparent"
+                        disabled={!formData.province}
                       >
-                        {newAccount.district || "Select district..."}
+                        {formData.district || "Select district..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -528,11 +462,11 @@ export default function ManageMOHPage() {
                                 value={district}
                                 onSelect={(currentValue) => {
                                   const selectedDistrict =
-                                    currentValue === newAccount.district
+                                    currentValue === formData.district
                                       ? ""
                                       : currentValue;
-                                  setNewAccount({
-                                    ...newAccount,
+                                  setFormData({
+                                    ...formData,
                                     district: selectedDistrict,
                                   });
                                   setOpenFormDistrict(false);
@@ -541,7 +475,7 @@ export default function ManageMOHPage() {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    newAccount.district === district
+                                    formData.district === district
                                       ? "opacity-100"
                                       : "opacity-0"
                                   )}
@@ -555,21 +489,30 @@ export default function ManageMOHPage() {
                     </PopoverContent>
                   </Popover>
                 </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={handleAddAccount}
-                >
-                  Create Account
-                </Button>
-              </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      "Register MOH Account"
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -581,10 +524,10 @@ export default function ManageMOHPage() {
               <Filter className="w-5 h-5 mr-2 text-red-600" />
               Filter MOH Accounts
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <CardDescription>
               Filter by province and district, search by name/email/ID, or use
               both together
-            </p>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -622,7 +565,7 @@ export default function ManageMOHPage() {
                                     ? ""
                                     : currentValue;
                                 setFilterProvince(selectedProvince);
-                                setFilterDistrict(""); // Reset district when province changes
+                                setFilterDistrict("");
                                 setOpenFilterProvince(false);
                               }}
                             >
@@ -807,20 +750,31 @@ export default function ManageMOHPage() {
                   </span>
                 )}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardDescription>
                 {mohAccounts.length === 0
                   ? "No MOH accounts found matching your criteria"
                   : `Found ${mohAccounts.length} MOH account${
                       mohAccounts.length !== 1 ? "s" : ""
                     } matching your criteria`}
-              </p>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {mohAccounts.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">
-                    No MOH accounts found. Try adjusting your filters.
+                  <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No MOH Accounts Found
+                  </h3>
+                  <p className="text-gray-600">
+                    No MOH accounts found matching your filter criteria.
                   </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleClearFilter}
+                    className="mt-4 bg-transparent"
+                  >
+                    Clear Filters
+                  </Button>
                 </div>
               ) : (
                 <>
@@ -856,12 +810,12 @@ export default function ManageMOHPage() {
                       </TableHeader>
                       <TableBody>
                         {currentAccounts.map((account) => (
-                          <TableRow key={account.id}>
+                          <TableRow key={account.mohId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {account.id}
+                              {account.mohId}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              <div className="max-w-[120px] truncate">
+                              <div className="max-w-[150px] truncate">
                                 {account.name}
                               </div>
                             </TableCell>
@@ -888,7 +842,10 @@ export default function ManageMOHPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {account.createdDate}
+                              {format(
+                                new Date(account.createdAt),
+                                "dd MMM yyyy, h:mm a"
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1 md:space-x-2">
@@ -977,7 +934,7 @@ export default function ManageMOHPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">MOH ID</Label>
-                      <p className="text-sm">{selectedAccount.id}</p>
+                      <p className="text-sm">{selectedAccount.mohId}</p>
                     </div>
                   </div>
 
@@ -1040,7 +997,12 @@ export default function ManageMOHPage() {
                       <Label className="text-sm font-medium">
                         Created Date
                       </Label>
-                      <p className="text-sm">{selectedAccount.createdDate}</p>
+                      <p className="text-sm">
+                        {format(
+                          new Date(selectedAccount.createdAt),
+                          "dd MMM yyyy, h:mm a"
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1060,115 +1022,133 @@ export default function ManageMOHPage() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle className="text-green-600">
-                Account Created Successfully!
+                MOH Account Added Successfully!
               </DialogTitle>
               <DialogDescription>
                 The MOH account has been created. Please save these credentials
                 securely.
               </DialogDescription>
             </DialogHeader>
-            {createdAccount && (
-              <div className="space-y-4">
-                <div className="grid gap-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">MOH ID</Label>
-                      <p className="text-sm">{createdAccount.id}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(createdAccount.id, "MOH ID")
-                      }
-                    >
-                      {copiedField === "MOH ID" ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">MOH ID</p>
+                    <p className="text-sm text-gray-600">{generatedMohId}</p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(generatedMohId, "MOH ID")}
+                  >
+                    {copiedField === "MOH ID" ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">Name</Label>
-                      <p className="text-sm">{createdAccount.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">Province</Label>
-                      <p className="text-sm">{createdAccount.province}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">District</Label>
-                      <p className="text-sm">{createdAccount.district}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium">Email</Label>
-                      <p className="text-sm">{createdAccount.email}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(createdAccount.email, "Email")
-                      }
-                    >
-                      {copiedField === "Email" ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium text-yellow-800">
-                        Generated Password
-                      </Label>
-                      <p className="text-sm font-mono bg-yellow-100 px-2 py-1 rounded mt-1">
-                        {createdAccount.password}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(createdAccount.password, "Password")
-                      }
-                    >
-                      {copiedField === "Password" ? (
-                        <Check className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">MOH Name</p>
+                    <p className="text-sm text-gray-600">{formData.name}</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800">
-                    <strong>Important:</strong> Please save these credentials
-                    securely. The password will not be shown again for security
-                    reasons.
-                  </p>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Contact Number</p>
+                    <p className="text-sm text-gray-600">
+                      {formData.contactNo}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-sm text-gray-600">{formData.email}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(formData.email, "Email")}
+                  >
+                    {copiedField === "Email" ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Province</p>
+                    <p className="text-sm text-gray-600">{formData.province}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">District</p>
+                    <p className="text-sm text-gray-600">{formData.district}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">
+                      Generated Password
+                    </p>
+                    <p className="text-sm font-mono bg-yellow-100 px-2 py-1 rounded mt-1">
+                      {generatedPassword}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      copyToClipboard(generatedPassword, "Password")
+                    }
+                  >
+                    {copiedField === "Password" ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </div>
-            )}
-            <div className="flex justify-end">
-              <Button onClick={() => setIsSuccessDialogOpen(false)}>
-                Close
-              </Button>
+
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Important:</strong> Please save these credentials
+                  securely. The password will not be shown again for security
+                  reasons.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setIsSuccessDialogOpen(false);
+                    setIsAddDialogOpen(true);
+                    resetForm();
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  Register Another MOH Account
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsSuccessDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -16,34 +17,57 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Building2, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function HospitalLogin() {
   const [credentials, setCredentials] = useState({
-    email: "",
+    hospitalId: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await api.get("/auth/get/hospital");
+        if (res.status === 200) {
+          router.replace("/hospital/dashboard");
+        }
+      } catch (err: any) {
+        if (err.response?.status !== 401) {
+          console.error("Session check error:", err);
+        }
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    setIsLoading(true);
 
-    // simulate auth
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (
-      credentials.email === "hospital@gmail.com" &&
-      credentials.password === "hospital123"
-    ) {
-      localStorage.setItem("hospitalAuth", "true");
-      router.push("/hospital/dashboard");
-    } else {
-      setError("Invalid credentials. Please try again.");
+    const { hospitalId, password } = credentials;
+    if (!hospitalId || !password) {
+      setError("Please fill in all fields.");
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      await api.post("/auth/login/hospital", { hospitalId, password });
+      router.replace("/hospital/dashboard");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
+      console.error("Hospital login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,17 +83,17 @@ export default function HospitalLogin() {
           <CardDescription>Sign in to access the EVRS system</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="hospitalId">Hospital ID</Label>
               <Input
-                id="email"
+                id="hospitalId"
                 type="text"
-                value={credentials.email}
+                value={credentials.hospitalId}
                 onChange={(e) =>
-                  setCredentials({ ...credentials, email: e.target.value })
+                  setCredentials({ ...credentials, hospitalId: e.target.value })
                 }
-                placeholder="Enter your email"
+                placeholder="Enter your ID"
                 required
               />
             </div>
@@ -106,14 +130,6 @@ export default function HospitalLogin() {
               )}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              Demo Credentials:
-            </p>
-            <p className="text-sm font-mono text-center">
-              hospital@gmail.com / hospital123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

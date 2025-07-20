@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -16,34 +17,57 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function MOHLogin() {
   const [credentials, setCredentials] = useState({
-    email: "",
+    mohId: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await api.get("/auth/get/moh");
+        if (res.status === 200) {
+          router.replace("/moh/dashboard");
+        }
+      } catch (err: any) {
+        if (err.response?.status !== 401) {
+          console.error("Session check error:", err);
+        }
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    setIsLoading(true);
 
-    // simulate auth
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (
-      credentials.email === "moh@gmail.com" &&
-      credentials.password === "moh123"
-    ) {
-      localStorage.setItem("mohAuth", "true");
-      router.push("/moh/dashboard");
-    } else {
-      setError("Invalid credentials. Please try again.");
+    const { mohId, password } = credentials;
+    if (!mohId || !password) {
+      setError("Please fill in all fields.");
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      await api.post("/auth/login/moh", { mohId, password });
+      router.replace("/moh/dashboard");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
+      console.error("MOH login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,17 +83,17 @@ export default function MOHLogin() {
           <CardDescription>Sign in to access the EVRS system</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="mohId">MOH ID</Label>
               <Input
-                id="email"
+                id="mohId"
                 type="text"
-                value={credentials.email}
+                value={credentials.mohId}
                 onChange={(e) =>
-                  setCredentials({ ...credentials, email: e.target.value })
+                  setCredentials({ ...credentials, mohId: e.target.value })
                 }
-                placeholder="Enter your email"
+                placeholder="Enter MOH ID"
                 required
               />
             </div>
@@ -106,14 +130,6 @@ export default function MOHLogin() {
               )}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              Demo Credentials:
-            </p>
-            <p className="text-sm font-mono text-center">
-              moh@gmail.com / moh123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -56,7 +56,29 @@ export const addVaccination = async (req, res) => {
 
 export const getAllVaccinations = async (req, res) => {
   try {
-    const records = await VaccinationRecord.find().sort({ createdAt: -1 });
+    const { location, date, search } = req.query;
+    const filter = {};
+
+    if (location) {
+      filter.vaccinationLocation = location;
+    }
+    if (date) {
+      filter.expiryDate = date;
+    }
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { citizenId: regex },
+        { citizenName: regex },
+        { division: regex },
+        { vaccinationType: regex },
+        { healthcareProviderId: regex },
+      ];
+    }
+
+    const records = await VaccinationRecord.find(filter).sort({
+      createdAt: -1,
+    });
     res.status(200).json(records);
   } catch (error) {
     console.error("Get vaccinations error:", error);
