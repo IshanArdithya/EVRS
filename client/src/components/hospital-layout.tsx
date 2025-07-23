@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, Shield } from "lucide-react";
@@ -19,6 +19,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { hospitalnavigation } from "@/constants/dashboard-layout";
+import { HospitalUser } from "@/types";
 
 interface HospitalLayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,20 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<HospitalUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("hospital");
+    if (storedUser) {
+      try {
+        const parsedUser: HospitalUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -91,12 +106,14 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
           <div className="flex items-center gap-3 text-sm">
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder.svg?height=32&width=32" />
-              <AvatarFallback>MH</AvatarFallback>
+              <AvatarFallback>
+                {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">Hospital</p>
+              <p className="font-medium">{currentUser?.name}</p>
               <p className="text-xs text-muted-foreground">
-                hospital@health.gov.lk
+                {currentUser?.email}
               </p>
             </div>
           </div>
@@ -131,12 +148,14 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
                 <div className="flex items-center gap-3 text-sm">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                    <AvatarFallback>MH</AvatarFallback>
+                    <AvatarFallback>
+                      {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">Hospital</p>
+                    <p className="font-medium">{currentUser?.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      hospital@health.gov.lk
+                      {currentUser?.email}
                     </p>
                   </div>
                 </div>
@@ -161,16 +180,20 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback>H</AvatarFallback>
+                  <AvatarFallback>
+                    {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Hospital</p>
+                  <p className="text-sm font-medium leading-none">
+                    {currentUser?.name}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    hospital@health.gov.lk
+                    {currentUser?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>

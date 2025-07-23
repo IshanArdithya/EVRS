@@ -97,3 +97,12 @@ export type HCPUser = {
   nic: string;
   createdAt: string;
 };
+
+export type HospitalUser = {
+  hospitalId: string;
+  mainRole: "hospital" | string;
+  name: string;
+  email: string;
+  district: string;
+  province: string;
+};
