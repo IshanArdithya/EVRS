@@ -666,7 +666,7 @@ export default function ManageVaccinationRecords() {
                             Vaccine ID
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
-                            Healthcare Provider ID
+                            Recorded By
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Location
@@ -702,7 +702,7 @@ export default function ManageVaccinationRecords() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="max-w-[120px] truncate">
-                                {record.healthcareProviderId}
+                                {record.recordedBy?.id}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
@@ -816,12 +816,8 @@ export default function ManageVaccinationRecords() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">
-                        Healthcare Provider ID
-                      </Label>
-                      <p className="text-sm">
-                        {selectedRecord.healthcareProviderId}
-                      </p>
+                      <Label className="text-sm font-medium">Recorded By</Label>
+                      <p className="text-sm">{selectedRecord.recordedBy?.id}</p>
                     </div>
                   </div>
 
