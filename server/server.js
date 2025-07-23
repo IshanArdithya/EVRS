@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import sharedRoutes from "./routes/sharedRoutes.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -26,6 +27,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/shared", sharedRoutes);
 
 connectDB();
 
