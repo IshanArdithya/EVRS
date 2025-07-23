@@ -23,9 +23,9 @@ const vaccinationSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    healthcareProviderId: {
-      type: String,
-      required: true,
+    recordedBy: {
+      id: { type: String, required: true },
+      role: { type: String, enum: ["hcp", "hospital", "moh"], required: true },
     },
     vaccinationLocation: {
       type: String,
