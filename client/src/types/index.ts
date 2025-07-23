@@ -69,13 +69,16 @@ export interface VaccinationRecord {
   citizenId: string;
   vaccineId: string;
   citizenName: string;
-  healthcareProviderId: string;
   vaccinationType: string;
   provider: string;
   location: string;
   vaccinationLocation: string;
   createdAt: string;
   division: string;
+  recordedBy: {
+    id: string;
+    role: string;
+  };
 }
 
 export interface allVaccines {
@@ -84,3 +87,13 @@ export interface allVaccines {
   sideEffects: string;
   createdAt: string;
 }
+
+export type HCPUser = {
+  hcpId: string;
+  role: "doctor" | "nurse" | "midwife" | string;
+  mainRole: "hcp" | string;
+  fullName: string;
+  email: string;
+  nic: string;
+  createdAt: string;
+};

@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, Shield } from "lucide-react";
@@ -19,6 +19,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { healthcareprovidernavigation } from "@/constants/dashboard-layout";
+import { HCPUser } from "@/types";
 
 interface HealthcareProviderLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,20 @@ export function HealthcareProviderLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<HCPUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("hcp");
+    if (storedUser) {
+      try {
+        const parsedUser: HCPUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -93,11 +108,15 @@ export function HealthcareProviderLayout({
           <div className="flex items-center gap-3 text-sm">
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder.svg?height=32&width=32" />
-              <AvatarFallback>HP</AvatarFallback>
+              <AvatarFallback>
+                {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">Healthcare Provider</p>
-              <p className="text-xs text-muted-foreground">HP@health.gov.lk</p>
+              <p className="font-medium">{currentUser?.fullName}</p>
+              <p className="text-xs text-muted-foreground">
+                {currentUser?.email}
+              </p>
             </div>
           </div>
         </div>
@@ -133,12 +152,14 @@ export function HealthcareProviderLayout({
                 <div className="flex items-center gap-3 text-sm">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                    <AvatarFallback>HP</AvatarFallback>
+                    <AvatarFallback>
+                      {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">EVRS</p>
+                    <p className="font-medium">{currentUser?.fullName}</p>
                     <p className="text-xs text-muted-foreground">
-                      hp@health.gov.lk
+                      {currentUser?.email}
                     </p>
                   </div>
                 </div>
@@ -164,7 +185,9 @@ export function HealthcareProviderLayout({
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback>HP</AvatarFallback>
+                  <AvatarFallback>
+                    {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -172,10 +195,10 @@ export function HealthcareProviderLayout({
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    Healthcare Provider
+                    {currentUser?.fullName}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    hp@health.gov.lk
+                    {currentUser?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>

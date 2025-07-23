@@ -58,7 +58,15 @@ export default function HealthcareProviderLogin() {
     }
 
     try {
-      await api.post("/auth/login/hcp", { hcpId, password });
+      const res = await api.post("/auth/login/hcp", { hcpId, password });
+
+      const userData = res.data.hcp;
+      const userToStore = {
+        ...userData,
+        mainRole: "hcp",
+      };
+
+      localStorage.setItem("hcp", JSON.stringify(userToStore));
 
       router.replace("/healthcare-provider/dashboard");
     } catch (err: any) {

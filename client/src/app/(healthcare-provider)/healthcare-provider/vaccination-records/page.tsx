@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Card,
@@ -51,109 +51,14 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { HealthcareProviderLayout } from "@/components/healthcare-provider-layout";
-
-const vaccineTypes = [
-  "BCG",
-  "Hepatitis B",
-  "DPT",
-  "Polio",
-  "MMR",
-  "Pneumococcal",
-  "Rotavirus",
-  "Influenza",
-  "COVID-19",
-  "Varicella",
-  "HPV",
-  "Meningococcal",
-];
-
-const vaccinationLocations = [
-  "Colombo General Hospital",
-  "Kandy Teaching Hospital",
-  "Galle District Hospital",
-  "Anuradhapura General Hospital",
-  "Jaffna Teaching Hospital",
-  "Batticaloa Hospital",
-  "Matara District Hospital",
-  "Kurunegala General Hospital",
-  "Ratnapura Provincial Hospital",
-];
-
-// Mock citizen vaccination data
-const mockCitizenData = {
-  NB001: {
-    name: "Amara Silva",
-    nic: "199012345678",
-    vaccinations: [
-      {
-        id: 1,
-        vaccinationType: "BCG",
-        date: "2024-01-15",
-        batchNumber: "BCG001234",
-        location: "Colombo General Hospital",
-        provider: "Dr. Samantha Silva",
-        division: "Colombo North",
-        notes: "First dose administered successfully",
-      },
-      {
-        id: 2,
-        vaccinationType: "Hepatitis B",
-        date: "2024-02-20",
-        batchNumber: "HB567890",
-        location: "Kandy Teaching Hospital",
-        provider: "Nurse Mary Fernando",
-        division: "Kandy Central",
-        notes: "Second dose in series",
-      },
-    ],
-  },
-  NB002: {
-    name: "Kamal Perera",
-    nic: "198506789012",
-    vaccinations: [
-      {
-        id: 3,
-        vaccinationType: "COVID-19",
-        date: "2024-01-10",
-        batchNumber: "CV445566",
-        location: "Galle District Hospital",
-        provider: "Dr. Kamal Fernando",
-        division: "Galle South",
-        notes: "Booster dose administered",
-      },
-    ],
-  },
-  NB003: {
-    name: "Nimal Fernando",
-    nic: "199203456789",
-    vaccinations: [
-      {
-        id: 4,
-        vaccinationType: "DPT",
-        date: "2024-03-05",
-        batchNumber: "DPT778899",
-        location: "Anuradhapura General Hospital",
-        provider: "Dr. Mihan Jayawardena",
-        division: "Anuradhapura East",
-        notes: "Routine vaccination",
-      },
-      {
-        id: 5,
-        vaccinationType: "Polio",
-        date: "2024-03-20",
-        batchNumber: "PL334455",
-        location: "Anuradhapura General Hospital",
-        provider: "Nurse Nimal Perera",
-        division: "Anuradhapura East",
-        notes: "Follow-up dose",
-      },
-    ],
-  },
-};
+import api from "@/lib/api";
+import { format } from "date-fns";
+import { HCPUser, Vaccine } from "@/types";
 
 export default function HealthcareProviderDashboard() {
   const [citizenId, setCitizenId] = useState("");
   const [citizenData, setCitizenData] = useState<any>(null);
+  const [vaccines, setVaccines] = useState<Vaccine[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
@@ -170,6 +75,36 @@ export default function HealthcareProviderDashboard() {
 
   const { toast } = useToast();
 
+  const [generatedVaccinationId, setGeneratedVaccinationId] = useState("");
+  const [citizenError, setCitizenError] = useState("");
+  const [currentUser, setCurrentUser] = useState<HCPUser | null>(null);
+
+  const selectedVac = vaccines.find(
+    (v) => v.vaccineId === formData.vaccinationType
+  );
+  const vacName = selectedVac?.name || formData.vaccinationType;
+
+  useEffect(() => {
+    if (!isAddDialogOpen) return;
+    api
+      .get<Vaccine[]>("/admin/vaccines")
+      .then((res) => setVaccines(res.data))
+      .catch((err) => console.error("Failed to load vaccines", err));
+  }, [isAddDialogOpen]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("hcp");
+    if (storedUser) {
+      try {
+        const parsedUser: HCPUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
+
   const handleSearchCitizen = async () => {
     if (!citizenId.trim()) {
       toast({
@@ -182,26 +117,40 @@ export default function HealthcareProviderDashboard() {
 
     setIsSearching(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await api.get(`/shared/vaccinations/${citizenId}`);
 
-    const citizen = mockCitizenData[citizenId as keyof typeof mockCitizenData];
-    if (citizen) {
-      setCitizenData(citizen);
+      const { patient, records } = response.data;
+
+      setCitizenData({
+        name: `${patient.firstName} ${patient.lastName}`,
+        birthDate: patient.birthDate,
+        vaccinations: records,
+      });
+
       toast({
         title: "Citizen Found",
-        description: `Loaded vaccination records for ${citizen.name}`,
+        description: `Loaded vaccination records for ${patient.firstName} ${patient.lastName}`,
       });
-    } else {
+    } catch (error: any) {
       setCitizenData(null);
       toast({
         title: "Citizen Not Found",
-        description: "No citizen found with the provided ID",
+        description: error.response?.data?.message || "Failed to fetch data",
         variant: "destructive",
       });
+    } finally {
+      setIsSearching(false);
     }
+  };
 
-    setIsSearching(false);
+  const validateCitizen = async (citizenId: string): Promise<boolean> => {
+    try {
+      await api.get<unknown>(`/admin/patient/${citizenId}`);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleAddVaccination = () => {
@@ -211,23 +160,57 @@ export default function HealthcareProviderDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!currentUser || !currentUser.hcpId) {
+      toast({
+        title: "Missing Healthcare Provider ID",
+        description: "Re-login required. Your session may have expired.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const citizenExists = await validateCitizen(formData.citizenId);
+    if (!citizenExists) {
+      setCitizenError("Citizen not found. Please enter a valid ID");
+      setIsLoading(false);
+      return;
+    }
+    setCitizenError("");
 
-    setIsLoading(false);
-    setIsAddDialogOpen(false);
-    setIsSuccessDialogOpen(true);
+    try {
+      const payload = {
+        citizenId: formData.citizenId,
+        vaccineId: formData.vaccinationType,
+        batchNumber: formData.batchNumber,
+        expiryDate: formData.expiryDate,
+        recordedById: currentUser.hcpId,
+        recordedByRole: currentUser.mainRole,
+        vaccinationLocation: formData.vaccinationLocation,
+        division: formData.division,
+        additionalNotes: formData.notes || "",
+      };
 
-    toast({
-      title: "Vaccination Record Added Successfully",
-      description:
-        "The vaccination record has been added to the citizen's profile",
-    });
+      const { data } = await api.post("/shared/add-vaccination", payload);
 
-    // refresh citizen data
-    handleSearchCitizen();
+      setGeneratedVaccinationId(data.record.vaccinationId);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
+      toast({
+        title: "Vaccination Added",
+        description: `Record ${data.record.vaccinationId} created!`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to add record.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -292,7 +275,7 @@ export default function HealthcareProviderDashboard() {
                   id="citizenId"
                   value={citizenId}
                   onChange={(e) => setCitizenId(e.target.value)}
-                  placeholder="e.g., NB001"
+                  placeholder="e.g., C6660830450"
                   className="mt-1"
                 />
               </div>
@@ -329,9 +312,7 @@ export default function HealthcareProviderDashboard() {
                     <User className="w-5 h-5 text-primary" />
                     Citizen Information
                   </CardTitle>
-                  <CardDescription>
-                    {citizenData.name} (ID: {citizenId})
-                  </CardDescription>
+                  <CardDescription>(ID: {citizenId})</CardDescription>
                 </div>
                 <Button
                   onClick={handleAddVaccination}
@@ -349,8 +330,10 @@ export default function HealthcareProviderDashboard() {
                   <p className="text-sm text-gray-600">{citizenData.name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">NIC Number</Label>
-                  <p className="text-sm text-gray-600">{citizenData.nic}</p>
+                  <Label className="text-sm font-medium">Birth Date</Label>
+                  <p className="text-sm text-gray-600">
+                    {format(new Date(citizenData.birthDate), "yyyy/MM/dd")}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -384,9 +367,7 @@ export default function HealthcareProviderDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Vaccination Records</CardTitle>
-              <CardDescription>
-                Complete vaccination history for {citizenData.name}
-              </CardDescription>
+              <CardDescription>Complete vaccination history</CardDescription>
             </CardHeader>
             <CardContent>
               {citizenData.vaccinations.length === 0 ? (
@@ -398,56 +379,59 @@ export default function HealthcareProviderDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Vaccination Type</TableHead>
+                        <TableHead>Vaccine Name</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Batch Number</TableHead>
                         <TableHead>Location</TableHead>
-                        <TableHead>Provider</TableHead>
                         <TableHead>Division</TableHead>
                         <TableHead>Notes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {citizenData.vaccinations.map((vaccination: any) => (
-                        <TableRow key={vaccination.id}>
-                          <TableCell>
-                            <Badge
-                              className={getVaccineBadgeColor(
-                                vaccination.vaccinationType
-                              )}
-                            >
-                              {vaccination.vaccinationType}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                              {vaccination.date}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <Hash className="w-4 h-4 mr-2 text-gray-400" />
-                              {vaccination.batchNumber}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                              <div className="max-w-[120px] truncate">
-                                {vaccination.location}
+                      {citizenData.vaccinations.map(
+                        (vaccination: any, i: any) => (
+                          <TableRow key={i}>
+                            <TableCell>
+                              <Badge
+                                className={getVaccineBadgeColor(
+                                  vaccination.vaccinationType
+                                )}
+                              >
+                                {vaccination.vaccineName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                                {format(
+                                  new Date(vaccination.createdAt),
+                                  "yyyy/MM/dd"
+                                )}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{vaccination.provider}</TableCell>
-                          <TableCell>{vaccination.division}</TableCell>
-                          <TableCell>
-                            <div className="max-w-[150px] truncate">
-                              {vaccination.notes}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <Hash className="w-4 h-4 mr-2 text-gray-400" />
+                                {vaccination.batchNumber}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                                <div className="max-w-[120px] truncate">
+                                  {vaccination.vaccinationLocation}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{vaccination.division}</TableCell>
+                            <TableCell>
+                              <div className="max-w-[150px] truncate">
+                                {vaccination.additionalNotes}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -474,9 +458,12 @@ export default function HealthcareProviderDashboard() {
                   disabled
                   className="bg-gray-50"
                 />
+                {citizenError && (
+                  <p className="text-sm text-red-600">{citizenError}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vaccinationType">Vaccination Type *</Label>
+                <Label htmlFor="vaccinationType">Vaccine Name *</Label>
                 <Select
                   value={formData.vaccinationType}
                   onValueChange={(value) =>
@@ -488,9 +475,9 @@ export default function HealthcareProviderDashboard() {
                     <SelectValue placeholder="Select vaccine type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vaccineTypes.map((vaccine) => (
-                      <SelectItem key={vaccine} value={vaccine}>
-                        {vaccine}
+                    {vaccines.map((v) => (
+                      <SelectItem key={v.vaccineId} value={v.vaccineId}>
+                        {v.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -524,24 +511,15 @@ export default function HealthcareProviderDashboard() {
                 <Label htmlFor="vaccinationLocation">
                   Vaccination Location *
                 </Label>
-                <Select
+                <Input
+                  id="vaccinationLocation"
                   value={formData.vaccinationLocation}
-                  onValueChange={(value) =>
-                    handleInputChange("vaccinationLocation", value)
+                  onChange={(e) =>
+                    handleInputChange("vaccinationLocation", e.target.value)
                   }
+                  placeholder="e.g., Colombo General Hospital"
                   required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vaccinationLocations.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="division">Division *</Label>
@@ -610,6 +588,12 @@ export default function HealthcareProviderDashboard() {
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium">Vaccination ID</p>
+                  <p className="text-sm text-gray-600">
+                    {generatedVaccinationId}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">Citizen</p>
                   <p className="text-sm text-gray-600">
                     {citizenData?.name} ({formData.citizenId})
@@ -617,11 +601,11 @@ export default function HealthcareProviderDashboard() {
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">Vaccination Type</p>
+                  <p className="text-sm font-medium">Vaccine Name</p>
                   <Badge
                     className={getVaccineBadgeColor(formData.vaccinationType)}
                   >
-                    {formData.vaccinationType}
+                    {vacName}
                   </Badge>
                 </div>
 

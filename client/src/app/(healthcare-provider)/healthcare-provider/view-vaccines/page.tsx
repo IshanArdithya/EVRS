@@ -39,97 +39,11 @@ import {
   Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock vaccine data
-const allVaccines = [
-  {
-    id: "V001",
-    name: "BCG Vaccine",
-    description: "Tuberculosis prevention",
-    sideEffects:
-      "Common: Mild soreness at injection site, small scar formation. Rare: Severe local reaction, lymph node swelling.",
-  },
-  {
-    id: "V002",
-    name: "Hepatitis B Vaccine",
-    description: "Hepatitis B prevention",
-    sideEffects:
-      "Common: Mild pain at injection site, fatigue. Rare: Allergic reaction, fever.",
-  },
-  {
-    id: "V003",
-    name: "DPT Vaccine",
-    description: "Diphtheria, Pertussis, Tetanus prevention",
-    sideEffects:
-      "Common: Redness and swelling at injection site, mild fever. Rare: High fever, seizures.",
-  },
-  {
-    id: "V004",
-    name: "Polio Vaccine",
-    description: "Poliomyelitis prevention",
-    sideEffects:
-      "Common: Mild soreness at injection site. Rare: Allergic reaction.",
-  },
-  {
-    id: "V005",
-    name: "MMR Vaccine",
-    description: "Measles, Mumps, Rubella prevention",
-    sideEffects:
-      "Common: Mild fever, rash. Rare: High fever, joint pain, temporary low platelet count.",
-  },
-  {
-    id: "V006",
-    name: "COVID-19 Vaccine",
-    description: "COVID-19 prevention",
-    sideEffects:
-      "Common: Pain at injection site, fatigue, headache, muscle pain. Rare: Severe allergic reaction.",
-  },
-  {
-    id: "V007",
-    name: "Influenza Vaccine",
-    description: "Seasonal flu prevention",
-    sideEffects:
-      "Common: Mild soreness at injection site, low-grade fever. Rare: Severe allergic reaction.",
-  },
-  {
-    id: "V008",
-    name: "Pneumococcal Vaccine",
-    description: "Pneumococcal disease prevention",
-    sideEffects:
-      "Common: Redness and pain at injection site, mild fever. Rare: Severe local reaction.",
-  },
-  {
-    id: "V009",
-    name: "Rotavirus Vaccine",
-    description: "Rotavirus gastroenteritis prevention",
-    sideEffects:
-      "Common: Mild diarrhea, vomiting. Rare: Intussusception (very rare).",
-  },
-  {
-    id: "V010",
-    name: "Varicella Vaccine",
-    description: "Chickenpox prevention",
-    sideEffects:
-      "Common: Mild rash, fever. Rare: Severe rash, pneumonia in immunocompromised individuals.",
-  },
-  {
-    id: "V011",
-    name: "HPV Vaccine",
-    description: "Human Papillomavirus prevention",
-    sideEffects:
-      "Common: Pain at injection site, headache, fatigue. Rare: Fainting, severe allergic reaction.",
-  },
-  {
-    id: "V012",
-    name: "Meningococcal Vaccine",
-    description: "Meningococcal disease prevention",
-    sideEffects:
-      "Common: Redness and pain at injection site, mild fever. Rare: Severe allergic reaction.",
-  },
-];
+import api from "@/lib/api";
+import { allVaccines } from "@/types";
 
 export default function ViewVaccines() {
-  const [vaccines, setVaccines] = useState<typeof allVaccines>([]);
+  const [vaccines, setVaccines] = useState<allVaccines[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   // filter states
@@ -150,29 +64,28 @@ export default function ViewVaccines() {
   const currentVaccines = vaccines.slice(startIndex, endIndex);
 
   // apply filters
-  const handleApplyFilter = () => {
+  const handleApplyFilter = async () => {
     setIsFilterLoading(true);
 
-    // simulate API call delay
-    setTimeout(() => {
-      let filteredVaccines = [...allVaccines];
-
-      // apply search filter if search query exists
+    try {
+      const params: Record<string, string> = {};
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredVaccines = filteredVaccines.filter(
-          (vaccine) =>
-            vaccine.name.toLowerCase().includes(query) ||
-            vaccine.id.toLowerCase().includes(query) ||
-            vaccine.description.toLowerCase().includes(query)
-        );
+        params.search = searchQuery.trim();
       }
 
-      setVaccines(filteredVaccines);
-      setCurrentPage(1);
+      const response = await api.get("/shared/vaccines", { params });
+      setVaccines(response.data);
       setHasAppliedFilter(true);
+    } catch (err) {
+      toast({
+        title: "Fetch Error",
+        description: "Could not load vaccines. Try again.",
+        variant: "destructive",
+      });
+      console.error(err);
+    } finally {
       setIsFilterLoading(false);
-    }, 1000);
+    }
   };
 
   // clear filters
@@ -220,7 +133,7 @@ export default function ViewVaccines() {
               Filter Vaccines
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Search by vaccine name, ID, or description, or view all vaccines
+              Search by vaccine name, or ID, or view all vaccines
             </p>
           </CardHeader>
           <CardContent>
@@ -231,7 +144,7 @@ export default function ViewVaccines() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Search by name, ID, or description..."
+                    placeholder="Search by name, ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -369,7 +282,7 @@ export default function ViewVaccines() {
                             Vaccine Name
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
-                            Description
+                            Side Effects
                           </TableHead>
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Status
@@ -381,16 +294,16 @@ export default function ViewVaccines() {
                       </TableHeader>
                       <TableBody>
                         {currentVaccines.map((vaccine) => (
-                          <TableRow key={vaccine.id}>
+                          <TableRow key={vaccine.vaccineId}>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {vaccine.id}
+                              {vaccine.vaccineId}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {vaccine.name}
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                               <div className="max-w-[200px] truncate">
-                                {vaccine.description}
+                                {vaccine.sideEffects}
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
@@ -464,7 +377,7 @@ export default function ViewVaccines() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Vaccine ID</Label>
-                      <p className="text-sm">{selectedVaccine.id}</p>
+                      <p className="text-sm">{selectedVaccine.vaccineId}</p>
                     </div>
                   </div>
 
@@ -480,20 +393,20 @@ export default function ViewVaccines() {
                   </div>
 
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <Label className="text-sm font-medium">Description</Label>
+                    <Label className="text-sm font-medium">Side Effects</Label>
                     <p className="text-sm mt-1">
-                      {selectedVaccine.description}
+                      {selectedVaccine.sideEffects}
                     </p>
                   </div>
 
-                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  {/* <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <Label className="text-sm font-medium text-yellow-800">
                       Side Effects
                     </Label>
                     <p className="text-sm mt-1 text-yellow-700 whitespace-pre-line">
                       {selectedVaccine.sideEffects}
                     </p>
-                  </div>
+                  </div> */}
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
