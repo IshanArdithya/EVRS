@@ -11,7 +11,8 @@ export const addVaccination = async (req, res) => {
     vaccineId,
     batchNumber,
     expiryDate,
-    healthcareProviderId,
+    recordedById,
+    recordedByRole,
     vaccinationLocation,
     division,
     additionalNotes,
@@ -22,13 +23,14 @@ export const addVaccination = async (req, res) => {
     !vaccineId ||
     !batchNumber ||
     !expiryDate ||
-    !healthcareProviderId ||
+    !recordedById ||
+    !recordedByRole ||
     !vaccinationLocation ||
     !division
   ) {
-    return res
-      .status(400)
-      .json({ message: "All fields except additionalNotes are required" });
+    return res.status(400).json({
+      message: "All fields except additionalNotes are required",
+    });
   }
 
   try {
@@ -38,7 +40,10 @@ export const addVaccination = async (req, res) => {
       vaccineId,
       batchNumber,
       expiryDate,
-      healthcareProviderId,
+      recordedBy: {
+        id: recordedById,
+        role: recordedByRole,
+      },
       vaccinationLocation,
       division,
       additionalNotes: additionalNotes || "",
@@ -72,7 +77,7 @@ export const getAllVaccinations = async (req, res) => {
         { citizenName: regex },
         { division: regex },
         { vaccinationType: regex },
-        { healthcareProviderId: regex },
+        { "recordedBy.id": regex },
       ];
     }
 

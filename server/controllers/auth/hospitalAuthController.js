@@ -42,7 +42,7 @@ export const loginHospital = async (req, res) => {
       token,
       hospital: {
         hospitalId: hospital.hospitalId,
-        name: hospital.hospitalName,
+        name: hospital.name,
         email: hospital.email,
         district: hospital.district,
         province: hospital.province,

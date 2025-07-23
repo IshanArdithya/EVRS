@@ -44,6 +44,7 @@ export const loginHCP = async (req, res) => {
         hcpId: hcp.hcpId,
         fullName: hcp.fullName,
         role: hcp.role,
+        email: hcp.email,
       },
     });
   } catch (error) {
