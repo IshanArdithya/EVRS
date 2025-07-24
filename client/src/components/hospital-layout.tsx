@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { hospitalnavigation } from "@/constants/dashboard-layout";
 import { HospitalUser } from "@/types";
+import { CreateNewbornDialog } from "@/app/(hospital)/hospital/components/create-newborn-dialog";
 
 interface HospitalLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<HospitalUser | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,23 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
     <>
       {hospitalnavigation.map((item) => {
         const Icon = item.icon;
+
+        if (item.href === "/hospital/create-newborn") {
+          return (
+            <button
+              key={item.name}
+              onClick={() => setCreateNewbornOpen(true)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full text-left",
+                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.name}
+            </button>
+          );
+        }
+
         return (
           <Link
             key={item.name}
@@ -214,6 +233,10 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
+      <CreateNewbornDialog
+        open={createNewbornOpen}
+        onOpenChange={setCreateNewbornOpen}
+      />
     </div>
   );
 }

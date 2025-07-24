@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import Vaccine from "../models/vaccineModel.js";
 import Patient from "../models/patientModel.js";
 import VaccinationRecord from "../models/vaccinationModel.js";
@@ -5,6 +7,15 @@ import VaccinationRecord from "../models/vaccinationModel.js";
 function generateVaccinationId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);
   return `VR${digits}`;
+}
+
+function generateCitizenId() {
+  const digits = Math.floor(1000000000 + Math.random() * 9000000000);
+  return `C${digits}`;
+}
+
+function generateRandomPassword(length = 10) {
+  return crypto.randomBytes(length).toString("base64").slice(0, length);
 }
 
 export const getAllVaccines = async (req, res) => {
@@ -127,6 +138,76 @@ export const addVaccination = async (req, res) => {
     });
   } catch (error) {
     console.error("Add vaccination error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const registerPatient = async (req, res) => {
+  const {
+    serialNumber,
+    firstName,
+    lastName,
+    birthDate,
+    district,
+    division,
+    guardianNIC,
+    recordedBy,
+  } = req.body;
+
+  try {
+    if (
+      !serialNumber ||
+      !firstName ||
+      !lastName ||
+      !birthDate ||
+      !district ||
+      !division ||
+      !guardianNIC ||
+      !recordedBy?.id ||
+      !recordedBy?.role
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const existing = await Patient.findOne({ serialNumber });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ message: "Patient with this serial number already exists" });
+    }
+
+    const rawPassword = generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    const newPatient = await Patient.create({
+      citizenId: generateCitizenId(),
+      serialNumber,
+      firstName,
+      lastName,
+      birthDate,
+      district,
+      division,
+      guardianNIC,
+      password: hashedPassword,
+      recordedBy: {
+        id: recordedBy.id,
+        role: recordedBy.role,
+      },
+    });
+
+    res.status(201).json({
+      message: "Patient registered successfully",
+      patient: {
+        id: newPatient._id,
+        citizenId: newPatient.citizenId,
+        firstName: newPatient.firstName,
+        lastName: newPatient.lastName,
+        email: newPatient.email,
+        password: rawPassword,
+      },
+    });
+  } catch (error) {
+    console.error("Register patient error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

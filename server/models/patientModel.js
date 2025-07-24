@@ -47,6 +47,14 @@ const patientSchema = new mongoose.Schema(
     address: {
       type: String,
     },
+    recordedBy: {
+      id: { type: String, required: true },
+      role: {
+        type: String,
+        enum: ["hcp", "hospital", "moh", "admin"],
+        required: true,
+      },
+    },
   },
   { timestamps: true }
 );
