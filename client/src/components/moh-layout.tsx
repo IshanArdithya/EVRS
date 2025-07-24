@@ -19,6 +19,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { mohnavigation } from "@/constants/dashboard-layout";
+import { CreateNewbornDialog } from "@/app/(moh)/moh/components/create-newborn-dialog";
 
 interface MOHLayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export function MOHLayout({ children }: MOHLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -53,6 +55,23 @@ export function MOHLayout({ children }: MOHLayoutProps) {
     <>
       {mohnavigation.map((item) => {
         const Icon = item.icon;
+
+        if (item.href === "/moh/create-newborn") {
+          return (
+            <button
+              key={item.name}
+              onClick={() => setCreateNewbornOpen(true)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full text-left",
+                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.name}
+            </button>
+          );
+        }
+
         return (
           <Link
             key={item.name}
@@ -193,6 +212,10 @@ export function MOHLayout({ children }: MOHLayoutProps) {
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
+      <CreateNewbornDialog
+        open={createNewbornOpen}
+        onOpenChange={setCreateNewbornOpen}
+      />
     </div>
   );
 }
