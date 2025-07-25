@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,21 +24,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        await api.get("/auth/get/citizen");
-        router.replace("/dashboard");
-      } catch (err: any) {
-        if (!err.response || err.response.status !== 401) {
-          console.error("Session check error:", err);
-        }
-      }
-    };
-
-    checkSession();
-  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

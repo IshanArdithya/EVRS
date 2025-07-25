@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -27,23 +27,6 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await api.get("/auth/get/admin");
-        if (res.status === 200) {
-          router.replace("/admin/dashboard");
-        }
-      } catch (err: any) {
-        if (err.response?.status !== 401) {
-          console.error("Session check error:", err);
-        }
-      }
-    };
-
-    checkSession();
-  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
