@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -28,6 +28,8 @@ import {
   Building2,
   Users,
 } from "lucide-react";
+import api from "@/lib/api";
+import { AdminUser } from "@/types";
 
 const navigation = [
   {
@@ -80,10 +82,35 @@ export function AdminDashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
-    router.push("/admin");
+  useEffect(() => {
+    const storedUser = localStorage.getItem("admin");
+    if (storedUser) {
+      try {
+        const parsedUser: AdminUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const res = await api.post("/auth/logout/admin");
+
+      if (res.status === 200) {
+        localStorage.removeItem("admin");
+
+        router.replace("/admin/login");
+      } else {
+        console.error("Logout failed with status:", res.status);
+      }
+    } catch (err) {
+      console.error("Error logging out:", err);
+    }
   };
 
   return (
@@ -134,7 +161,7 @@ export function AdminDashboardLayout({
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">Administrator</p>
                       <p className="text-xs text-muted-foreground">
-                        admin@evrs.gov.lk
+                        {currentUser?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
