@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { hospitalnavigation } from "@/constants/dashboard-layout";
 import { HospitalUser } from "@/types";
 import { CreateNewbornDialog } from "@/app/(hospital)/hospital/components/create-newborn-dialog";
+import api from "@/lib/api";
 
 interface HospitalLayoutProps {
   children: React.ReactNode;
@@ -48,18 +49,14 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/logout/hospital`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
+      const res = await api.post("/auth/logout/hospital");
 
-      if (res.ok) {
+      if (res.status === 200) {
+        localStorage.removeItem("hospital");
+
         router.replace("/hospital/login");
       } else {
-        console.error("Logout failed");
+        console.error("Logout failed with status:", res.status);
       }
     } catch (err) {
       console.error("Error logging out:", err);
