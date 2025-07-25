@@ -106,3 +106,10 @@ export type HospitalUser = {
   district: string;
   province: string;
 };
+
+export type MOHUser = {
+  mohId: string;
+  mainRole: "moh" | string;
+  name: string;
+  email: string;
+};

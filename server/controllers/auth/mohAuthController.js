@@ -42,6 +42,7 @@ export const loginMOH = async (req, res) => {
       token,
       moh: {
         mohId: moh.mohId,
+        name: moh.name,
         email: moh.email,
         contactNumber: moh.contactNumber,
         district: moh.district,

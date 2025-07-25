@@ -58,7 +58,16 @@ export default function MOHLogin() {
     }
 
     try {
-      await api.post("/auth/login/moh", { mohId, password });
+      const res = await api.post("/auth/login/moh", { mohId, password });
+
+      const userData = res.data.moh;
+      const userToStore = {
+        ...userData,
+        mainRole: "moh",
+      };
+
+      localStorage.setItem("moh", JSON.stringify(userToStore));
+
       router.replace("/moh/dashboard");
     } catch (err: any) {
       const msg =

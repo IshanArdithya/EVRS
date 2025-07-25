@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, Shield } from "lucide-react";
@@ -20,6 +20,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { mohnavigation } from "@/constants/dashboard-layout";
 import { CreateNewbornDialog } from "@/app/(moh)/moh/components/create-newborn-dialog";
+import { MOHUser } from "@/types";
+import api from "@/lib/api";
 
 interface MOHLayoutProps {
   children: React.ReactNode;
@@ -30,21 +32,31 @@ export function MOHLayout({ children }: MOHLayoutProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<MOHUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("moh");
+    if (storedUser) {
+      try {
+        const parsedUser: MOHUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/logout/moh`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
+      const res = await api.post("/auth/logout/moh");
 
-      if (res.ok) {
+      if (res.status === 200) {
+        localStorage.removeItem("moh");
+
         router.replace("/moh/login");
       } else {
-        console.error("Logout failed");
+        console.error("Logout failed with status:", res.status);
       }
     } catch (err) {
       console.error("Error logging out:", err);
@@ -110,11 +122,15 @@ export function MOHLayout({ children }: MOHLayoutProps) {
           <div className="flex items-center gap-3 text-sm">
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder.svg?height=32&width=32" />
-              <AvatarFallback>MH</AvatarFallback>
+              <AvatarFallback>
+                {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">MOH Officer</p>
-              <p className="text-xs text-muted-foreground">moh@health.gov.lk</p>
+              <p className="font-medium">{currentUser?.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {currentUser?.email}
+              </p>
             </div>
           </div>
         </div>
@@ -150,12 +166,14 @@ export function MOHLayout({ children }: MOHLayoutProps) {
                 <div className="flex items-center gap-3 text-sm">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                    <AvatarFallback>MH</AvatarFallback>
+                    <AvatarFallback>
+                      {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">MOH Officer</p>
+                    <p className="font-medium">{currentUser?.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      moh@health.gov.lk
+                      {currentUser?.email}
                     </p>
                   </div>
                 </div>
@@ -180,7 +198,9 @@ export function MOHLayout({ children }: MOHLayoutProps) {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback>MH</AvatarFallback>
+                  <AvatarFallback>
+                    {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -188,10 +208,10 @@ export function MOHLayout({ children }: MOHLayoutProps) {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    MOH Officer
+                    {currentUser?.name}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    moh@health.gov.lk
+                    {currentUser?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>

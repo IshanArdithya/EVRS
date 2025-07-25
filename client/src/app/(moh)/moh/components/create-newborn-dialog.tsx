@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Baby,
   User,
@@ -34,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { MOHUser } from "@/types";
+import api from "@/lib/api";
 
 const districts = [
   "Ampara",
@@ -63,36 +66,6 @@ const districts = [
   "Vavuniya",
 ];
 
-const divisions = [
-  "Colombo Central",
-  "Colombo North",
-  "Colombo South",
-  "Gampaha",
-  "Kalutara",
-  "Kandy",
-  "Matale",
-  "Nuwara Eliya",
-  "Galle",
-  "Matara",
-  "Hambantota",
-  "Jaffna",
-  "Kilinochchi",
-  "Mannar",
-  "Mullaitivu",
-  "Vavuniya",
-  "Batticaloa",
-  "Ampara",
-  "Trincomalee",
-  "Kurunegala",
-  "Puttalam",
-  "Anuradhapura",
-  "Polonnaruwa",
-  "Badulla",
-  "Moneragala",
-  "Ratnapura",
-  "Kegalle",
-];
-
 interface CreateNewbornDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -115,16 +88,21 @@ export function CreateNewbornDialog({
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [currentUser, setCurrentUser] = useState<MOHUser | null>(null);
+  const [generatedCitizenId, setGeneratedCitizenId] = useState("");
 
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+  useEffect(() => {
+    const storedUser = localStorage.getItem("moh");
+    if (storedUser) {
+      try {
+        const parsedUser: MOHUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
     }
-    return password;
-  };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,18 +138,52 @@ export function CreateNewbornDialog({
 
     setIsSubmitting(true);
 
-    // simulate API call
-    setTimeout(() => {
-      const password = generatePassword();
-      setGeneratedPassword(password);
+    try {
+      const response = await api.post("/shared/register-patient", {
+        serialNumber: formData.serialNumber,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        birthDate: formData.birthDate,
+        district: formData.district,
+        division: formData.division,
+        guardianNIC: formData.guardianNic,
+        recordedBy: {
+          id: currentUser?.mohId,
+          role: currentUser?.mainRole,
+        },
+      });
+
+      const { patient, message } = response.data;
+
+      setGeneratedCitizenId(patient.citizenId);
+      setGeneratedPassword(patient.password);
+
       setShowSuccessDialog(true);
       setIsSubmitting(false);
 
       toast({
-        title: "Success",
-        description: "Newborn account created successfully",
+        title: "Citizen Added Successfully",
+        description: message,
       });
-    }, 2000);
+
+      // setFormData({
+      //   serialNumber: "",
+      //   firstName: "",
+      //   lastName: "",
+      //   birthDate: "",
+      //   district: "",
+      //   division: "",
+      //   guardianNic: "",
+      // });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add Citizen",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const copyPassword = async () => {
@@ -181,7 +193,7 @@ export function CreateNewbornDialog({
         title: "Copied",
         description: "Password copied to clipboard",
       });
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy password",
@@ -229,6 +241,10 @@ export function CreateNewbornDialog({
             <div className="bg-green-50 p-4 rounded-lg space-y-3">
               <h4 className="font-medium text-green-800">Account Details</h4>
               <div className="grid gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Citizen ID:</span>
+                  <span className="font-medium">{generatedCitizenId}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Serial Number:</span>
                   <span className="font-medium">{formData.serialNumber}</span>
@@ -345,7 +361,7 @@ export function CreateNewbornDialog({
                 required
               />
               <p className="text-xs text-muted-foreground">
-                This will become the citizen account ID
+                This is in the birth certificate
               </p>
             </div>
 
@@ -426,26 +442,18 @@ export function CreateNewbornDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="division" className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
+                  <IdCard className="h-4 w-4" />
                   Division *
                 </Label>
-                <Select
+                <Input
+                  id="division"
                   value={formData.division}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, division: value })
+                  onChange={(e) =>
+                    setFormData({ ...formData, division: e.target.value })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select division" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {divisions.map((division) => (
-                      <SelectItem key={division} value={division}>
-                        {division}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Enter division"
+                  required
+                />
               </div>
             </div>
 
