@@ -113,3 +113,9 @@ export type MOHUser = {
   name: string;
   email: string;
 };
+
+export type AdminUser = {
+  adminId: string;
+  mainRole: "admin" | string;
+  email: string;
+};

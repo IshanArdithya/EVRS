@@ -12,9 +12,16 @@ function generateRandomPassword(length = 10) {
 }
 
 export const registerHCP = async (req, res) => {
-  const { role, fullName, email, nic } = req.body;
+  const { role, fullName, email, nic, recordedBy } = req.body;
 
-  if (!role || !fullName || !email || !nic) {
+  if (
+    !role ||
+    !fullName ||
+    !email ||
+    !nic ||
+    !recordedBy?.id ||
+    !recordedBy?.role
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -41,6 +48,10 @@ export const registerHCP = async (req, res) => {
       fullName,
       email,
       nic,
+      recordedBy: {
+        id: recordedBy.id,
+        role: recordedBy.role,
+      },
       password: hashedPassword,
     });
 

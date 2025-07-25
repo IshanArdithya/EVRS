@@ -6,10 +6,10 @@ function generateVaccineId() {
 }
 
 export const registerVaccine = async (req, res) => {
-  const { name, sideEffects } = req.body;
+  const { name, sideEffects, recordedBy } = req.body;
 
-  if (!name) {
-    return res.status(400).json({ message: "Vaccine name is required" });
+  if (!name || !recordedBy?.id || !recordedBy?.role) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
@@ -22,11 +22,20 @@ export const registerVaccine = async (req, res) => {
       vaccineId: generateVaccineId(),
       name,
       sideEffects: sideEffects || "",
+      recordedBy: {
+        id: recordedBy.id,
+        role: recordedBy.role,
+      },
     });
 
     res.status(201).json({
       message: "Vaccine registered successfully",
-      vaccine: newVaccine,
+      vaccine: {
+        id: newVaccine._id,
+        vaccineId: newVaccine.vaccineId,
+        name: newVaccine.name,
+        sideEffects: newVaccine.sideEffects,
+      },
     });
   } catch (error) {
     console.error("Register vaccine error:", error);

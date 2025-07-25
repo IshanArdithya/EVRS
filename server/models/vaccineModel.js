@@ -16,6 +16,14 @@ const vaccineSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    recordedBy: {
+      id: { type: String, required: true },
+      role: {
+        type: String,
+        enum: ["admin"],
+        required: true,
+      },
+    },
   },
   { timestamps: true }
 );

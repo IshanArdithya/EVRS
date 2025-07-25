@@ -12,9 +12,17 @@ function generateRandomPassword(length = 10) {
 }
 
 export const registerMOH = async (req, res) => {
-  const { name, contactNo, email, province, district } = req.body;
+  const { name, contactNo, email, province, district, recordedBy } = req.body;
 
-  if (!name || !contactNo || !email || !province || !district) {
+  if (
+    !name ||
+    !contactNo ||
+    !email ||
+    !province ||
+    !district ||
+    !recordedBy?.id ||
+    !recordedBy?.role
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -36,6 +44,10 @@ export const registerMOH = async (req, res) => {
       email,
       province,
       district,
+      recordedBy: {
+        id: recordedBy.id,
+        role: recordedBy.role,
+      },
       password: hashedPassword,
     });
 

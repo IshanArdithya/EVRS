@@ -65,6 +65,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { format } from "date-fns";
+import { AdminUser } from "@/types";
 
 // province and district data
 const provinceDistrictData = {
@@ -122,6 +123,20 @@ export default function ManageMOH() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentAccounts = mohAccounts.slice(startIndex, endIndex);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("admin");
+    if (storedUser) {
+      try {
+        const parsedUser: AdminUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   // get districts for selected province (filter)
   const getFilterDistricts = () => {
@@ -214,6 +229,10 @@ export default function ManageMOH() {
         email: formData.email,
         province: formData.province,
         district: formData.district,
+        recordedBy: {
+          id: currentUser?.adminId,
+          role: currentUser?.mainRole,
+        },
       });
 
       const { moh, message } = response.data;

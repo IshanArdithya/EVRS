@@ -30,6 +30,9 @@ const hcpSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    recordedBy: {
+      id: { type: String, required: true },
+    },
   },
   { timestamps: true }
 );
