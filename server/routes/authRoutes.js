@@ -19,8 +19,17 @@ import {
   loginMOH,
   logoutMOH,
 } from "../controllers/auth/mohAuthController.js";
+import {
+  getAdminProfile,
+  loginAdmin,
+  logoutAdmin,
+} from "../controllers/auth/adminAuthController.js";
 
 const router = express.Router();
+
+router.post("/login/admin", loginAdmin);
+router.post("/logout/admin", logoutAdmin);
+router.get("/get/admin", getAdminProfile);
 
 router.post("/login/citizen", loginCitizen);
 router.post("/logout/citizen", logoutCitizen);
