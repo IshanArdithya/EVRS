@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { MOHLayout } from "@/components/moh-layout";
 import { mohkeyfeatures, support } from "@/constants/system-information";
 import { mohQA } from "@/constants/quick-actions";
+import { CreateNewbornDialog } from "../components/create-newborn-dialog";
+import { useState } from "react";
 
 const stats = [
   {
@@ -37,6 +39,8 @@ const stats = [
 ];
 
 export default function MOHHome() {
+  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+
   return (
     <MOHLayout>
       <div className="space-y-8">
@@ -112,12 +116,22 @@ export default function MOHHome() {
                     <CardDescription>{action.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Link href={action.href}>
-                      <Button className="w-full group">
+                    {action.title === "Create Newborn Account" ? (
+                      <Button
+                        className="w-full group"
+                        onClick={() => setCreateNewbornOpen(true)}
+                      >
                         Get Started
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link href={action.href}>
+                        <Button className="w-full group">
+                          Get Started
+                          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -159,6 +173,10 @@ export default function MOHHome() {
             </div>
           </CardContent>
         </Card>
+        <CreateNewbornDialog
+          open={createNewbornOpen}
+          onOpenChange={setCreateNewbornOpen}
+        />
       </div>
     </MOHLayout>
   );

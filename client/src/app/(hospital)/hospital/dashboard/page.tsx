@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { HospitalLayout } from "@/components/hospital-layout";
 import { hospitalkeyfeatures, support } from "@/constants/system-information";
 import { hospitalQA } from "@/constants/quick-actions";
+import { useState } from "react";
+import { CreateNewbornDialog } from "../components/create-newborn-dialog";
 
 const stats = [
   {
@@ -37,6 +39,8 @@ const stats = [
 ];
 
 export default function HospitalPage() {
+  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+
   return (
     <HospitalLayout>
       <div className="space-y-8">
@@ -110,12 +114,22 @@ export default function HospitalPage() {
                     <CardDescription>{action.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Link href={action.href}>
-                      <Button className="w-full group">
+                    {action.title === "Create Newborn Account" ? (
+                      <Button
+                        className="w-full group"
+                        onClick={() => setCreateNewbornOpen(true)}
+                      >
                         Get Started
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link href={action.href}>
+                        <Button className="w-full group">
+                          Get Started
+                          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -157,6 +171,10 @@ export default function HospitalPage() {
             </div>
           </CardContent>
         </Card>
+        <CreateNewbornDialog
+          open={createNewbornOpen}
+          onOpenChange={setCreateNewbornOpen}
+        />
       </div>
     </HospitalLayout>
   );
