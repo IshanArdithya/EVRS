@@ -35,7 +35,18 @@ export default function LoginPage() {
     }
 
     try {
-      await api.post("/auth/login/citizen", { citizenId, password });
+      const res = await api.post("/auth/login/citizen", {
+        citizenId,
+        password,
+      });
+
+      const userData = res.data.citizen;
+      const userToStore = {
+        ...userData,
+      };
+
+      localStorage.setItem("citizen", JSON.stringify(userToStore));
+
       router.replace("/dashboard");
     } catch (err: any) {
       const msg =
