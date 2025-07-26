@@ -119,3 +119,10 @@ export type AdminUser = {
   mainRole: "admin" | string;
   email: string;
 };
+
+export type CitizenUser = {
+  citizenId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
