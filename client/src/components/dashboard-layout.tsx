@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ import {
   X,
   Plus,
 } from "lucide-react";
+import { CitizenUser } from "@/types";
+import api from "@/lib/api";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,21 +45,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CitizenUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("citizen");
+    if (storedUser) {
+      try {
+        const parsedUser: CitizenUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/logout/citizen`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
+      const res = await api.post("/auth/logout/citizen");
 
-      if (res.ok) {
+      if (res.status === 200) {
+        localStorage.removeItem("citizen");
+
         router.replace("/login");
       } else {
-        console.error("Logout failed");
+        console.error("Logout failed with status:", res.status);
       }
     } catch (err) {
       console.error("Error logging out:", err);
@@ -123,9 +135,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuContent className="w-56" align="end">
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">user user</p>
+                      <p className="font-medium">
+                        {currentUser?.firstName} {currentUser?.lastName}
+                      </p>
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        user@user.com
+                        {currentUser?.citizenId}
                       </p>
                     </div>
                   </div>
