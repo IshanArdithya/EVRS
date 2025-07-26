@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { healthcareprovidernavigation } from "@/constants/dashboard-layout";
 import { HCPUser } from "@/types";
+import api from "@/lib/api";
 
 interface HealthcareProviderLayoutProps {
   children: React.ReactNode;
@@ -48,18 +49,14 @@ export function HealthcareProviderLayout({
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/logout/hcp`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
+      const res = await api.post("/auth/logout/hcp");
 
-      if (res.ok) {
+      if (res.status === 200) {
+        localStorage.removeItem("hcp");
+
         router.replace("/healthcare-provider/login");
       } else {
-        console.error("Logout failed");
+        console.error("Logout failed with status:", res.status);
       }
     } catch (err) {
       console.error("Error logging out:", err);
