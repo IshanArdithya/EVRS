@@ -126,3 +126,27 @@ export type CitizenUser = {
   lastName: string;
   email: string;
 };
+
+export type Record = {
+  vaccinationId: string;
+  vaccineName: string;
+  date: string;
+  location: string;
+  administrator: string;
+  administratorRole: string;
+  batchNumber: string;
+  sideEffects: string;
+  notes: string;
+};
+
+export type Vaccination = {
+  vaccinationId: string;
+  vaccineName: string;
+  date: string;
+  location: string;
+  administrator: string;
+  administratorRole: string;
+  batchNumber: string;
+  sideEffects: string;
+  notes: string;
+};

@@ -127,7 +127,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-primary text-white">
-                        UU
+                        {currentUser?.firstName?.charAt(0).toUpperCase() || "U"}
+                        {currentUser?.lastName?.charAt(0).toUpperCase() || ""}
                       </AvatarFallback>
                     </Avatar>
                   </Button>

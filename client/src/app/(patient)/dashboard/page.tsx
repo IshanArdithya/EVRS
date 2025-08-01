@@ -1,3 +1,5 @@
+"use client";
+
 import DashboardLayout from "@/components/dashboard-layout";
 import NewVaccinationCard from "@/components/new-vaccination-card";
 import {
@@ -9,24 +11,53 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Syringe,
-  Calendar,
-  Shield,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  ArrowRight,
-} from "lucide-react";
+import { Syringe, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { CitizenUser, Record } from "@/types";
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
+  const [currentUser, setCurrentUser] = useState<CitizenUser | null>(null);
+  const [vaccinations, setVaccinations] = useState<Record[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("citizen");
+    if (!storedUser) return router.replace("/login");
+    const { citizenId } = JSON.parse(storedUser);
+
+    api
+      .get(`/citizen/vaccinations/${citizenId}`)
+      .then((res) => setVaccinations(res.data.records))
+      .catch(() => router.replace("/login"));
+
+    if (storedUser) {
+      try {
+        const parsedUser: CitizenUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+        setCurrentUser(null);
+      }
+    }
+  }, [router]);
+
+  const recent = useMemo(() => {
+    return [...vaccinations]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+  }, [vaccinations]);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* welcome section */}
         <div className="bg-gradient-to-r from-primary-DEFAULT to-primary-600 rounded-lg p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">Welcome back, John</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            Welcome back, {currentUser?.firstName}
+          </h1>
           <p className="text-primary-100">
             Your vaccination records are up to date. Stay protected, stay
             healthy.
@@ -37,7 +68,7 @@ export default function DashboardPage() {
         <NewVaccinationCard />
 
         {/* quick stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -89,7 +120,7 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         {/* recent vaccinations */}
         <Card>
@@ -110,31 +141,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                {
-                  name: "COVID-19 Booster",
-                  date: "2024-01-15",
-                  status: "Complete",
-                  batch: "PF001234",
-                  location: "City Health Centre",
-                },
-                {
-                  name: "Influenza Vaccine",
-                  date: "2023-10-20",
-                  status: "Complete",
-                  batch: "FL567890",
-                  location: "Local GP Surgery",
-                },
-                {
-                  name: "Hepatitis B",
-                  date: "2023-08-10",
-                  status: "Complete",
-                  batch: "HB445566",
-                  location: "Travel Clinic",
-                },
-              ].map((vaccine, index) => (
+              {recent.map((vaccine, i) => (
                 <div
-                  key={index}
+                  key={i}
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex items-center space-x-4">
@@ -142,7 +151,7 @@ export default function DashboardPage() {
                       <Syringe className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-medium">{vaccine.name}</h4>
+                      <h4 className="font-medium">{vaccine.vaccineName}</h4>
                       <p className="text-sm text-muted-foreground">
                         {new Date(vaccine.date).toLocaleDateString()} •{" "}
                         {vaccine.location}
@@ -155,7 +164,7 @@ export default function DashboardPage() {
                       className="bg-green-100 text-green-800"
                     >
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      {vaccine.status}
+                      Completed
                     </Badge>
                   </div>
                 </div>
@@ -165,7 +174,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* upcoming reminders */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertCircle className="mr-2 h-5 w-5 text-orange-600" />
@@ -196,7 +205,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </DashboardLayout>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import DashboardLayout from "@/components/dashboard-layout";
 import {
   Card,
@@ -11,79 +12,183 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  QrCode,
   Clock,
-  RefreshCw,
-  CheckCircle,
-  AlertTriangle,
-  Shield,
   User,
+  Phone,
+  Mail,
+  QrCode,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Shield,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
+import { CitizenUser } from "@/types";
 
 export default function NewVaccinationPage() {
-  const [qrCode, setQrCode] = useState<string>("");
-  const [timeLeft, setTimeLeft] = useState<number>(300);
-  const [isExpired, setIsExpired] = useState<boolean>(false);
-
-  const generateQRCode = () => {
-    const sessionId = Math.random().toString(36).substring(2, 15);
-    const patientId = "EVRS001234567";
-    const timestamp = new Date().toISOString();
-    const qrData = `VACC_REQ:${sessionId}:${patientId}:${timestamp}`;
-    setQrCode(qrData);
-    setTimeLeft(300);
-    setIsExpired(false);
-  };
+  const [patientData, setPatientData] = useState<CitizenUser>({
+    citizenId: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    birthDate: "",
+  });
+  const [qrData, setQrData] = useState<string>("");
+  const [sessionId, setSessionId] = useState<string>("");
+  const [expiryTime, setExpiryTime] = useState<Date | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    generateQRCode();
+    const storedPatient = localStorage.getItem("citizen");
+    if (storedPatient) {
+      try {
+        const parsedPatient: PatientData = JSON.parse(storedPatient);
+        setPatientData(parsedPatient);
+        generateQRCode(parsedPatient);
+      } catch (err) {
+        console.error("Failed to parse patient data:", err);
+        generateQRCode(patientData);
+      }
+    } else {
+      generateQRCode(patientData);
+    }
   }, []);
 
   useEffect(() => {
-    if (timeLeft > 0 && !isExpired) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0) {
-      setIsExpired(true);
-    }
-  }, [timeLeft, isExpired]);
+    if (!expiryTime) return;
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    const interval = setInterval(() => {
+      const now = new Date();
+      const remaining = Math.max(0, expiryTime.getTime() - now.getTime());
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        setIsExpired(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  const generateQRCode = (patient: PatientData) => {
+    const newSessionId = `VR${Date.now()}${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    const timestamp = Date.now();
+    const expiry = new Date(timestamp + 5 * 60 * 1000);
+
+    const qrContent = `VACC_REQ:${newSessionId}:${patient.citizenId}:${timestamp}`;
+
+    setSessionId(newSessionId);
+    setQrData(qrContent);
+    setExpiryTime(expiry);
+    setIsExpired(false);
   };
 
-  const QRCodeDisplay = ({ data }: { data: string }) => (
-    <div className="w-48 h-48 bg-white border-2 border-gray-300 flex items-center justify-center mx-auto">
-      <div className="text-center">
-        <QrCode className="h-32 w-32 mx-auto mb-2" />
-        <div className="text-xs text-gray-500 break-all px-2">
-          {data.substring(0, 20)}...
-        </div>
-      </div>
-    </div>
-  );
+  const handleRefreshQR = () => {
+    generateQRCode(patientData);
+  };
+
+  const formatTimeRemaining = (milliseconds: number): string => {
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = Math.floor((milliseconds % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      return "Invalid Date";
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* header */}
         <div>
-          <h1 className="text-2xl font-bold text-primary-DEFAULT">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <QrCode className="w-8 h-8 mr-3 text-primary" />
             New Vaccination Request
           </h1>
-          <p className="text-muted-foreground">
-            Generate a QR code for your healthcare provider to record your
+          <p className="text-gray-600">
+            Show this QR code to your healthcare provider to request a new
             vaccination
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* QR code section */}
+          {/* Patient Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Patient Information
+              </CardTitle>
+              <CardDescription>Your registered details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <p className="text-sm text-gray-900">{`${patientData.firstName} ${patientData.lastName}`}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Citizen ID
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {patientData.citizenId}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Birth Date
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {formatDate(patientData.birthDate)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Phone
+                  </label>
+                  <p className="text-sm text-gray-900 flex items-center">
+                    <Phone className="w-4 h-4 mr-1 text-gray-400" />
+                    {patientData.phone}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <p className="text-sm text-gray-900 flex items-center">
+                    <Mail className="w-4 h-4 mr-1 text-gray-400" />
+                    {patientData.email}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* qr code */}
           <Card
             className={`${
               isExpired
@@ -93,89 +198,84 @@ export default function NewVaccinationPage() {
           >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center">
-                  <QrCode className="mr-2 h-5 w-5" />
-                  Vaccination QR Code
+                <span className="flex items-center gap-2">
+                  <QrCode className="w-5 h-5 text-primary" />
+                  Vaccination Request QR Code
                 </span>
                 <Badge
                   variant={isExpired ? "destructive" : "secondary"}
                   className="bg-green-100 text-green-800"
                 >
                   <Clock className="w-3 h-3 mr-1" />
-                  {isExpired ? "Expired" : formatTime(timeLeft)}
+                  {isExpired ? "Expired" : formatTimeRemaining(timeRemaining)}
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Show this QR code to your healthcare provider
+                Show this code to your healthcare provider
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
-              {!isExpired ? (
-                <>
-                  <QRCodeDisplay data={qrCode} />
-                  <div className="space-y-2">
-                    <p className="text-sm text-green-700 font-medium">
-                      QR Code Active
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Session ID: {qrCode.split(":")[1]?.substring(0, 8)}...
-                    </p>
+            <CardContent>
+              <div className="flex flex-col items-center space-y-4">
+                {qrData && !isExpired ? (
+                  <>
+                    <div className="p-4 bg-white rounded-lg border-2 border-gray-200 shadow-sm">
+                      <QRCodeSVG
+                        value={qrData}
+                        size={200}
+                        level="M"
+                        marginSize={1}
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                      />
+                    </div>
+
+                    <div className="text-center space-y-2">
+                      <p className="text-sm text-green-700 font-medium">
+                        QR Code Active
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Session ID: {sessionId.substring(0, 12)}...
+                      </p>
+                    </div>
+
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        QR code is active and ready to scan. Valid for 5
+                        minutes.
+                      </AlertDescription>
+                    </Alert>
+                  </>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="p-8 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+                      <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                      <p className="text-red-700 font-medium">
+                        QR Code Expired
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Generate a new code to continue
+                      </p>
+                    </div>
+
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        This QR code has expired. Generate a new one to
+                        continue.
+                      </AlertDescription>
+                    </Alert>
                   </div>
-                </>
-              ) : (
-                <div className="py-8">
-                  <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-                  <p className="text-red-700 font-medium">QR Code Expired</p>
-                  <p className="text-sm text-muted-foreground">
-                    Generate a new code to continue
-                  </p>
-                </div>
-              )}
+                )}
 
-              <Button
-                onClick={generateQRCode}
-                className="w-full bg-green-600 hover:bg-green-700"
-                variant={isExpired ? "default" : "outline"}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {isExpired ? "Generate New QR Code" : "Refresh QR Code"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* patient info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="mr-2 h-5 w-5" />
-                Your Information
-              </CardTitle>
-              <CardDescription>
-                Information that will be shared with your healthcare provider
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Patient Name:</span>
-                  <span className="text-sm">User User</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">EVRS Number:</span>
-                  <span className="text-sm">123123131</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Date of Birth:</span>
-                  <span className="text-sm">15 June 2020</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Blood Type:</span>
-                  <span className="text-sm">O+</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Known Allergies:</span>
-                  <span className="text-sm">Penicillin</span>
-                </div>
+                <Button
+                  onClick={handleRefreshQR}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  variant={isExpired ? "default" : "outline"}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  {isExpired ? "Generate New QR Code" : "Refresh QR Code"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -185,7 +285,7 @@ export default function NewVaccinationPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-primary-DEFAULT" />
+              <Shield className="mr-2 h-5 w-5 text-primary" />
               Instructions for Vaccination
             </CardTitle>
           </CardHeader>
@@ -199,39 +299,66 @@ export default function NewVaccinationPage() {
                 </AlertDescription>
               </Alert>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="font-medium text-primary-DEFAULT">
-                    Step-by-Step Process:
-                  </h4>
-                  <ol className="text-sm space-y-2 list-decimal list-inside">
-                    <li>Generate your QR code before arriving at the clinic</li>
-                    <li>Show the QR code to your healthcare provider</li>
-                    <li>
-                      The doctor will scan the code to access your information
-                    </li>
-                    <li>Receive your vaccination as prescribed</li>
-                    <li>
-                      The vaccination details will be automatically added to
-                      your record
-                    </li>
-                  </ol>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center space-y-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-primary font-bold">1</span>
+                  </div>
+                  <h3 className="font-semibold">Generate QR Code</h3>
+                  <p className="text-sm text-gray-600">
+                    Click "Generate New QR Code" to create a fresh vaccination
+                    request code
+                  </p>
                 </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-medium text-primary-DEFAULT">
-                    Important Notes:
-                  </h4>
-                  <ul className="text-sm space-y-2 list-disc list-inside">
-                    <li>QR codes expire after 5 minutes for security</li>
-                    <li>
-                      Only generate codes when you&apos;re ready for vaccination
-                    </li>
-                    <li>Ensure your phone has sufficient battery</li>
-                    <li>Have a backup form of ID available</li>
-                    <li>Inform the doctor of any recent health changes</li>
-                  </ul>
+                <div className="text-center space-y-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-primary font-bold">2</span>
+                  </div>
+                  <h3 className="font-semibold">Visit Healthcare Provider</h3>
+                  <p className="text-sm text-gray-600">
+                    Show the QR code to your healthcare provider or vaccination
+                    center
+                  </p>
                 </div>
+
+                <div className="text-center space-y-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-primary font-bold">3</span>
+                  </div>
+                  <h3 className="font-semibold">Get Vaccinated</h3>
+                  <p className="text-sm text-gray-600">
+                    The provider will scan your code and add the vaccination
+                    record to your profile
+                  </p>
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-900">
+                  Important Notes:
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    QR codes expire after 5 minutes for security purposes
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    Each QR code can only be used once
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    Make sure your device screen is bright and clear for
+                    scanning
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    Bring a valid ID for verification at the vaccination center
+                  </li>
+                </ul>
               </div>
 
               <Alert>
@@ -246,8 +373,8 @@ export default function NewVaccinationPage() {
           </CardContent>
         </Card>
 
-        {/* recent activity */}
-        <Card>
+        {/* recent qr activity */}
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="mr-2 h-5 w-5" />
@@ -256,23 +383,7 @@ export default function NewVaccinationPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                {
-                  date: "2024-01-15 14:30",
-                  status: "Completed",
-                  vaccine: "COVID-19 Booster",
-                },
-                {
-                  date: "2023-10-20 10:15",
-                  status: "Completed",
-                  vaccine: "Influenza Vaccine",
-                },
-                {
-                  date: "2023-08-10 16:45",
-                  status: "Completed",
-                  vaccine: "Hepatitis B",
-                },
-              ].map((activity, index) => (
+              {qrtest.map((activity, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 border rounded-lg"
@@ -294,7 +405,7 @@ export default function NewVaccinationPage() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </DashboardLayout>
   );
