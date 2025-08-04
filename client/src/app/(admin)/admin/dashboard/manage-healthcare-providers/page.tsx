@@ -29,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -52,6 +53,7 @@ import {
   Search,
   Filter,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
@@ -82,6 +84,20 @@ export default function ManageHealthcareProviders() {
   const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
 
+  // edit dialog states
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>(null);
+
+  // delete dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] =
+    useState(false);
+  const [selectedProviderForDelete, setSelectedProviderForDelete] =
+    useState<any>(null);
+  const [deleteTimer, setDeleteTimer] = useState(0);
+  const [deleteIntervalId, setDeleteIntervalId] =
+    useState<NodeJS.Timeout | null>(null);
+
   const { toast } = useToast();
 
   const itemsPerPage = 5;
@@ -89,6 +105,25 @@ export default function ManageHealthcareProviders() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProviders = providers.slice(startIndex, endIndex);
+
+  const fetchProviders = async (params: Record<string, string> = {}) => {
+    setIsFilterLoading(true);
+    try {
+      const response = await api.get("/admin/hcps", { params });
+      setProviders(response.data);
+      setCurrentPage(1);
+      setHasAppliedFilter(Object.keys(params).length > 0);
+    } catch (error) {
+      toast({
+        title: "Fetch Error",
+        description: "Failed to fetch HCPs. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setIsFilterLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,19 +152,9 @@ export default function ManageHealthcareProviders() {
       setGeneratedHcpId(hcp.hcpId);
       setGeneratedPassword(hcp.password);
 
-      setProviders((prev) => [
-        ...prev,
-        {
-          ...formData,
-          id: hcp._id,
-          mohId: hcp.mohId,
-          status: "Active",
-          createdDate: new Date().toISOString().split("T")[0],
-        },
-      ]);
-
       setIsAddDialogOpen(false);
       setIsSuccessDialogOpen(true);
+      fetchProviders();
 
       toast({
         title: "MOH Account Added Successfully",
@@ -157,37 +182,18 @@ export default function ManageHealthcareProviders() {
       return;
     }
 
-    setIsFilterLoading(true);
-
-    try {
-      const params: Record<string, string> = {};
-      if (filterRole) params.role = filterRole;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-
-      const response = await api.get("/admin/hcps", { params });
-
-      setProviders(response.data);
-      setCurrentPage(1);
-      setHasAppliedFilter(true);
-    } catch (error) {
-      toast({
-        title: "Fetch Error",
-        description: "Failed to fetch HCPs. Please try again.",
-        variant: "destructive",
-      });
-      console.error(error);
-    } finally {
-      setIsFilterLoading(false);
-    }
+    const params: Record<string, string> = {};
+    if (filterRole) params.role = filterRole;
+    if (searchQuery.trim()) params.search = searchQuery.trim();
+    fetchProviders(params);
   };
 
   // clear filters
   const handleClearFilter = () => {
     setFilterRole("");
     setSearchQuery("");
-    setProviders([]);
     setHasAppliedFilter(false);
-    setCurrentPage(1);
+    fetchProviders();
   };
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -223,7 +229,6 @@ export default function ManageHealthcareProviders() {
     }
   };
 
-  // get active filter description
   const getActiveFilters = () => {
     const filters = [];
     if (filterRole) {
@@ -250,6 +255,116 @@ export default function ManageHealthcareProviders() {
     hcp: "Healthcare Provider",
     hospital: "Hospital",
     moh: "Ministry of Health",
+  };
+
+  const handleEditClick = (provider: any) => {
+    setEditFormData({
+      id: provider.hcpId,
+      fullName: provider.fullName,
+      email: provider.email,
+      role: provider.role,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.fullName || !editFormData.email || !editFormData.role) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.put(`/admin/hcp/${editFormData.id}`, {
+        fullName: editFormData.fullName,
+        email: editFormData.email,
+        role: editFormData.role,
+      });
+      toast({
+        title: "Healthcare Provider Updated",
+        description: response.data.message,
+      });
+      setIsEditDialogOpen(false);
+      fetchProviders();
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (provider: any) => {
+    setSelectedProviderForDelete(provider);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteClick = () => {
+    setIsDeleteDialogOpen(false);
+    setIsConfirmDeleteDialogOpen(true);
+    setDeleteTimer(5);
+
+    const interval = setInterval(() => {
+      setDeleteTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setDeleteIntervalId(interval);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmDeleteDialogOpen(false);
+    setDeleteTimer(0);
+    if (deleteIntervalId) {
+      clearInterval(deleteIntervalId);
+      setDeleteIntervalId(null);
+    }
+  };
+
+  const handleFinalDelete = async () => {
+    if (deleteTimer > 0) return;
+
+    setIsLoading(true);
+    try {
+      const response = await api.delete(
+        `/admin/hcp/${selectedProviderForDelete.hcpId}`
+      );
+      toast({
+        title: "Healthcare Provider Deleted",
+        description: response.data.message,
+      });
+      setIsConfirmDeleteDialogOpen(false);
+      fetchProviders();
+    } catch (error: any) {
+      toast({
+        title: "Deletion Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteTimer(0);
+      if (deleteIntervalId) {
+        clearInterval(deleteIntervalId);
+        setDeleteIntervalId(null);
+      }
+    }
   };
 
   return (
@@ -361,7 +476,7 @@ export default function ManageHealthcareProviders() {
           </Dialog>
         </div>
 
-        {/* filter Section */}
+        {/* filter section */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -384,7 +499,7 @@ export default function ManageHealthcareProviders() {
                   <SelectContent>
                     {availableRoles.map((role) => (
                       <SelectItem key={role} value={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {role}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -580,6 +695,7 @@ export default function ManageHealthcareProviders() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={() => handleEditClick(provider)}
                                   className="p-1 md:p-2"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -588,6 +704,7 @@ export default function ManageHealthcareProviders() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={() => handleDeleteClick(provider)}
                                   className="text-red-600 p-1 md:p-2"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -691,7 +808,7 @@ export default function ManageHealthcareProviders() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Label className="text-sm font-medium">Role</Label>
+                      <Label className="text-sm font-medium">Recorded By</Label>
                       <p className="text-sm">
                         {selectedProvider.recordedBy?.role &&
                         selectedProvider.recordedBy?.id
@@ -716,6 +833,163 @@ export default function ManageHealthcareProviders() {
             <div className="flex justify-end">
               <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* edit dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Healthcare Provider</DialogTitle>
+              <DialogDescription>
+                Update the details for the healthcare provider.
+              </DialogDescription>
+            </DialogHeader>
+            {editFormData && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-id">Provider ID</Label>
+                  <Input id="edit-id" value={editFormData.id} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fullName">Full Name *</Label>
+                  <Input
+                    id="edit-fullName"
+                    value={editFormData.fullName}
+                    onChange={(e) =>
+                      handleEditInputChange("fullName", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email Address *</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) =>
+                      handleEditInputChange("email", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-role">Role *</Label>
+                  <Select
+                    value={editFormData.role}
+                    onValueChange={(value) =>
+                      handleEditInputChange("role", value)
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoles.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* delete confirmation dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Confirm Deletion
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete the healthcare provider{" "}
+                <strong>{selectedProviderForDelete?.fullName}</strong> (ID:{" "}
+                {selectedProviderForDelete?.hcpId})? This action cannot be
+                undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleConfirmDeleteClick}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isConfirmDeleteDialogOpen}
+          onOpenChange={setIsConfirmDeleteDialogOpen}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Final Confirmation
+              </DialogTitle>
+              <DialogDescription>
+                To confirm deletion of{" "}
+                <strong>{selectedProviderForDelete?.fullName}</strong> (ID:{" "}
+                {selectedProviderForDelete?.hcpId}), click the button below.
+                This action is irreversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleFinalDelete}
+                disabled={isLoading || deleteTimer > 0}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : deleteTimer > 0 ? (
+                  `Delete in ${deleteTimer}s`
+                ) : (
+                  "Delete Now"
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

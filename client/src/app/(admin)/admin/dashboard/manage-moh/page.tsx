@@ -4,7 +4,7 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -60,12 +61,12 @@ import {
   Edit,
   Trash2,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { format } from "date-fns";
-import { AdminUser } from "@/types";
 
 // province and district data
 const provinceDistrictData = {
@@ -124,48 +125,29 @@ export default function ManageMOH() {
   const endIndex = startIndex + itemsPerPage;
   const currentAccounts = mohAccounts.slice(startIndex, endIndex);
 
-  // get districts for selected province (filter)
-  const getFilterDistricts = () => {
-    return filterProvince
-      ? provinceDistrictData[
-          filterProvince as keyof typeof provinceDistrictData
-        ] || []
-      : [];
-  };
+  // edit dialog states
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>(null);
+  const [openEditFormProvince, setOpenEditFormProvince] = useState(false);
+  const [openEditFormDistrict, setOpenEditFormDistrict] = useState(false);
 
-  // get districts for selected province (form)
-  const getFormDistricts = () => {
-    return formData.province
-      ? provinceDistrictData[
-          formData.province as keyof typeof provinceDistrictData
-        ] || []
-      : [];
-  };
+  // delete dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] =
+    useState(false);
+  const [selectedAccountForDelete, setSelectedAccountForDelete] =
+    useState<any>(null);
+  const [deleteTimer, setDeleteTimer] = useState(0);
+  const [deleteIntervalId, setDeleteIntervalId] =
+    useState<NodeJS.Timeout | null>(null);
 
-  // apply filters
-  const handleApplyFilter = async () => {
-    if (!filterProvince && !searchQuery.trim()) {
-      toast({
-        title: "Filter Required",
-        description: "Please select a province or enter a search term",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const fetchMohAccounts = async (params: Record<string, string> = {}) => {
     setIsLoading(true);
-
     try {
-      const params: Record<string, string> = {};
-      if (filterProvince) params.province = filterProvince;
-      if (filterDistrict) params.district = filterDistrict;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-
       const response = await api.get("/admin/mohs", { params });
-
       setMohAccounts(response.data);
       setCurrentPage(1);
-      setHasAppliedFilter(true);
+      setHasAppliedFilter(Object.keys(params).length > 0);
     } catch (error) {
       toast({
         title: "Fetch Error",
@@ -178,14 +160,53 @@ export default function ManageMOH() {
     }
   };
 
-  // clear filters
+  const getFilterDistricts = () => {
+    return filterProvince
+      ? provinceDistrictData[
+          filterProvince as keyof typeof provinceDistrictData
+        ] || []
+      : [];
+  };
+
+  const getFormDistricts = () => {
+    return formData.province
+      ? provinceDistrictData[
+          formData.province as keyof typeof provinceDistrictData
+        ] || []
+      : [];
+  };
+
+  const getEditFormDistricts = () => {
+    return editFormData?.province
+      ? provinceDistrictData[
+          editFormData.province as keyof typeof provinceDistrictData
+        ] || []
+      : [];
+  };
+
+  const handleApplyFilter = async () => {
+    if (!filterProvince && !searchQuery.trim()) {
+      toast({
+        title: "Filter Required",
+        description: "Please select a province or enter a search term",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const params: Record<string, string> = {};
+    if (filterProvince) params.province = filterProvince;
+    if (filterDistrict) params.district = filterDistrict;
+    if (searchQuery.trim()) params.search = searchQuery.trim();
+    fetchMohAccounts(params);
+  };
+
   const handleClearFilter = () => {
     setFilterProvince("");
     setFilterDistrict("");
     setSearchQuery("");
-    setMohAccounts([]);
     setHasAppliedFilter(false);
-    setCurrentPage(1);
+    fetchMohAccounts();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,19 +243,9 @@ export default function ManageMOH() {
       setGeneratedMohId(moh.mohId);
       setGeneratedPassword(moh.password);
 
-      setMohAccounts((prev) => [
-        ...prev,
-        {
-          ...formData,
-          id: moh._id,
-          mohId: moh.mohId,
-          status: "Active",
-          createdDate: new Date().toISOString().split("T")[0],
-        },
-      ]);
-
       setIsAddDialogOpen(false);
       setIsSuccessDialogOpen(true);
+      fetchMohAccounts();
 
       toast({
         title: "MOH Account Added Successfully",
@@ -285,7 +296,7 @@ export default function ManageMOH() {
     setCopiedField("");
   };
 
-  // get active filter description
+  // active filter description
   const getActiveFilters = () => {
     const filters = [];
     if (filterProvince) {
@@ -300,12 +311,6 @@ export default function ManageMOH() {
     return filters;
   };
 
-  useEffect(() => {
-    // fetch all MOH accounts initially
-    // const allAccounts = getAllMohAccounts();
-    // setMohAccounts(allAccounts);
-  }, []);
-
   const handleViewDetails = (account: any) => {
     setSelectedAccount(account);
     setIsViewDialogOpen(true);
@@ -316,6 +321,126 @@ export default function ManageMOH() {
     hcp: "Healthcare Provider",
     hospital: "Hospital",
     moh: "Ministry of Health",
+  };
+
+  const handleEditClick = (account: any) => {
+    setEditFormData({
+      id: account.mohId,
+      name: account.name,
+      phoneNumber: account.phoneNumber,
+      email: account.email,
+      province: account.province,
+      district: account.district,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !editFormData.name ||
+      !editFormData.phoneNumber ||
+      !editFormData.email ||
+      !editFormData.province ||
+      !editFormData.district
+    ) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.put(`/admin/moh/${editFormData.id}`, {
+        name: editFormData.name,
+        phoneNumber: editFormData.phoneNumber,
+        email: editFormData.email,
+        province: editFormData.province,
+        district: editFormData.district,
+      });
+      toast({
+        title: "MOH Account Updated",
+        description: response.data.message,
+      });
+      setIsEditDialogOpen(false);
+      fetchMohAccounts();
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (account: any) => {
+    setSelectedAccountForDelete(account);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteClick = () => {
+    setIsDeleteDialogOpen(false);
+    setIsConfirmDeleteDialogOpen(true);
+    setDeleteTimer(5);
+
+    const interval = setInterval(() => {
+      setDeleteTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setDeleteIntervalId(interval);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmDeleteDialogOpen(false);
+    setDeleteTimer(0);
+    if (deleteIntervalId) {
+      clearInterval(deleteIntervalId);
+      setDeleteIntervalId(null);
+    }
+  };
+
+  const handleFinalDelete = async () => {
+    if (deleteTimer > 0) return;
+
+    setIsLoading(true);
+    try {
+      const response = await api.delete(
+        `/admin/moh/${selectedAccountForDelete.mohId}`
+      );
+      toast({
+        title: "MOH Account Deleted",
+        description: response.data.message,
+      });
+      setIsConfirmDeleteDialogOpen(false);
+      fetchMohAccounts();
+    } catch (error: any) {
+      toast({
+        title: "Deletion Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteTimer(0);
+      if (deleteIntervalId) {
+        clearInterval(deleteIntervalId);
+        setDeleteIntervalId(null);
+      }
+    }
   };
 
   return (
@@ -366,7 +491,7 @@ export default function ManageMOH() {
                     id="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={(e) =>
-                      handleInputChange("contactNo", e.target.value)
+                      handleInputChange("phoneNumber", e.target.value)
                     }
                     placeholder="e.g., +94 77 123 4567"
                     required
@@ -869,6 +994,7 @@ export default function ManageMOH() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={() => handleEditClick(account)}
                                   className="p-1 md:p-2"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -877,6 +1003,7 @@ export default function ManageMOH() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={() => handleDeleteClick(account)}
                                   className="text-red-600 p-1 md:p-2"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -1034,6 +1161,267 @@ export default function ManageMOH() {
             <div className="flex justify-end">
               <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* edit dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit MOH Account Details</DialogTitle>
+              <DialogDescription>
+                Update the information for the selected MOH account.
+              </DialogDescription>
+            </DialogHeader>
+            {editFormData && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-moh-id">MOH ID</Label>
+                  <Input id="edit-moh-id" value={editFormData.id} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-moh-name">MOH Name *</Label>
+                  <Input
+                    id="edit-moh-name"
+                    value={editFormData.name}
+                    onChange={(e) =>
+                      handleEditInputChange("name", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone-number">Contact Number *</Label>
+                  <Input
+                    id="edit-phone-number"
+                    value={editFormData.phoneNumber}
+                    onChange={(e) =>
+                      handleEditInputChange("phoneNumber", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-moh-email">Email Address *</Label>
+                  <Input
+                    id="edit-moh-email"
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) =>
+                      handleEditInputChange("email", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Province *</Label>
+                  <Popover
+                    open={openEditFormProvince}
+                    onOpenChange={setOpenEditFormProvince}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openEditFormProvince}
+                        className="w-full justify-between bg-transparent"
+                      >
+                        {editFormData.province || "Select province..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search province..." />
+                        <CommandList>
+                          <CommandEmpty>No province found.</CommandEmpty>
+                          <CommandGroup>
+                            {provinces.map((province) => (
+                              <CommandItem
+                                key={province}
+                                value={province}
+                                onSelect={(currentValue) => {
+                                  const selectedProvince =
+                                    currentValue === editFormData.province
+                                      ? ""
+                                      : currentValue;
+                                  setEditFormData({
+                                    ...editFormData,
+                                    province: selectedProvince,
+                                    district: "",
+                                  });
+                                  setOpenEditFormProvince(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.province === province
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {province}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label>District *</Label>
+                  <Popover
+                    open={openEditFormDistrict}
+                    onOpenChange={setOpenEditFormDistrict}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openEditFormDistrict}
+                        className="w-full justify-between bg-transparent"
+                        disabled={!editFormData.province}
+                      >
+                        {editFormData.district || "Select district..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search district..." />
+                        <CommandList>
+                          <CommandEmpty>No district found.</CommandEmpty>
+                          <CommandGroup>
+                            {getEditFormDistricts().map((district) => (
+                              <CommandItem
+                                key={district}
+                                value={district}
+                                onSelect={(currentValue) => {
+                                  const selectedDistrict =
+                                    currentValue === editFormData.district
+                                      ? ""
+                                      : currentValue;
+                                  setEditFormData({
+                                    ...editFormData,
+                                    district: selectedDistrict,
+                                  });
+                                  setOpenEditFormDistrict(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    editFormData.district === district
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {district}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* delete confirmation dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Confirm Deletion
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete the MOH account{" "}
+                <strong>{selectedAccountForDelete?.name}</strong> (ID:{" "}
+                {selectedAccountForDelete?.mohId})? This action cannot be
+                undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleConfirmDeleteClick}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isConfirmDeleteDialogOpen}
+          onOpenChange={setIsConfirmDeleteDialogOpen}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Final Confirmation
+              </DialogTitle>
+              <DialogDescription>
+                To confirm deletion of{" "}
+                <strong>{selectedAccountForDelete?.name}</strong> (ID:{" "}
+                {selectedAccountForDelete?.mohId}), click the button below. This
+                action is irreversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleFinalDelete}
+                disabled={isLoading || deleteTimer > 0}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : deleteTimer > 0 ? (
+                  `Delete in ${deleteTimer}s`
+                ) : (
+                  "Delete Now"
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

@@ -18,6 +18,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -38,10 +39,11 @@ import {
   Search,
   Filter,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { allVaccines } from "@/types";
+import type { allVaccines } from "@/types";
 
 export default function ManageVaccines() {
   const [vaccines, setVaccines] = useState<allVaccines[]>([]);
@@ -61,6 +63,20 @@ export default function ManageVaccines() {
   const [hasAppliedFilter, setHasAppliedFilter] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
 
+  // edit dialog states
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>(null);
+
+  // delete dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] =
+    useState(false);
+  const [selectedVaccineForDelete, setSelectedVaccineForDelete] =
+    useState<any>(null);
+  const [deleteTimer, setDeleteTimer] = useState(0);
+  const [deleteIntervalId, setDeleteIntervalId] =
+    useState<NodeJS.Timeout | null>(null);
+
   const { toast } = useToast();
 
   const itemsPerPage = 5;
@@ -69,18 +85,12 @@ export default function ManageVaccines() {
   const endIndex = startIndex + itemsPerPage;
   const currentVaccines = vaccines.slice(startIndex, endIndex);
 
-  // apply filters
-  const handleApplyFilter = async () => {
+  const fetchVaccines = async (params: Record<string, string> = {}) => {
     setIsFilterLoading(true);
-
     try {
-      const params: Record<string, string> = {};
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-
       const response = await api.get("/admin/vaccines", { params });
       setVaccines(response.data);
+      setCurrentPage(1);
       setHasAppliedFilter(true);
     } catch (err) {
       toast({
@@ -94,12 +104,20 @@ export default function ManageVaccines() {
     }
   };
 
+  // apply filters
+  const handleApplyFilter = async () => {
+    const params: Record<string, string> = {};
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
+    }
+    fetchVaccines(params);
+  };
+
   // clear filters
   const handleClearFilter = () => {
     setSearchQuery("");
-    setVaccines([]);
     setHasAppliedFilter(false);
-    setCurrentPage(1);
+    fetchVaccines();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,6 +146,7 @@ export default function ManageVaccines() {
 
       setIsAddDialogOpen(false);
       setIsSuccessDialogOpen(true);
+      fetchVaccines();
 
       toast({
         title: "Vaccine Added Successfully",
@@ -156,7 +175,7 @@ export default function ManageVaccines() {
     });
   };
 
-  // get active filter description
+  // get active filte
   const getActiveFilters = () => {
     const filters = [];
     if (searchQuery) {
@@ -173,6 +192,114 @@ export default function ManageVaccines() {
   const handleViewDetails = (vaccine: any) => {
     setSelectedVaccine(vaccine);
     setIsViewDialogOpen(true);
+  };
+
+  const handleEditClick = (vaccine: any) => {
+    setEditFormData({
+      id: vaccine.vaccineId,
+      name: vaccine.name,
+      sideEffects: vaccine.sideEffects,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.name || !editFormData.sideEffects) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.put(`/admin/vaccine/${editFormData.id}`, {
+        name: editFormData.name,
+        sideEffects: editFormData.sideEffects,
+      });
+      toast({
+        title: "Vaccine Updated",
+        description: response.data.message,
+      });
+      setIsEditDialogOpen(false);
+      fetchVaccines();
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (vaccine: any) => {
+    setSelectedVaccineForDelete(vaccine);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteClick = () => {
+    setIsDeleteDialogOpen(false);
+    setIsConfirmDeleteDialogOpen(true);
+    setDeleteTimer(5);
+
+    const interval = setInterval(() => {
+      setDeleteTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setDeleteIntervalId(interval);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmDeleteDialogOpen(false);
+    setDeleteTimer(0);
+    if (deleteIntervalId) {
+      clearInterval(deleteIntervalId);
+      setDeleteIntervalId(null);
+    }
+  };
+
+  const handleFinalDelete = async () => {
+    if (deleteTimer > 0) return;
+
+    setIsLoading(true);
+    try {
+      const response = await api.delete(
+        `/admin/vaccine/${selectedVaccineForDelete.vaccineId}`
+      );
+      toast({
+        title: "Vaccine Deleted",
+        description: response.data.message,
+      });
+      setIsConfirmDeleteDialogOpen(false);
+      fetchVaccines();
+    } catch (error: any) {
+      toast({
+        title: "Deletion Failed",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteTimer(0);
+      if (deleteIntervalId) {
+        clearInterval(deleteIntervalId);
+        setDeleteIntervalId(null);
+      }
+    }
   };
 
   return (
@@ -450,12 +577,17 @@ export default function ManageVaccines() {
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditClick(vaccine)}
+                                >
                                   <Edit className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={() => handleDeleteClick(vaccine)}
                                   className="text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -554,6 +686,146 @@ export default function ManageVaccines() {
             <div className="flex justify-end">
               <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* edit dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Vaccine Details</DialogTitle>
+              <DialogDescription>
+                Update the information for the selected vaccine.
+              </DialogDescription>
+            </DialogHeader>
+            {editFormData && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-vaccine-id">Vaccine ID</Label>
+                  <Input
+                    id="edit-vaccine-id"
+                    value={editFormData.id}
+                    disabled
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-vaccine-name">Vaccine Name *</Label>
+                  <Input
+                    id="edit-vaccine-name"
+                    value={editFormData.name}
+                    onChange={(e) =>
+                      handleEditInputChange("name", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-side-effects">Side Effects *</Label>
+                  <Textarea
+                    id="edit-side-effects"
+                    value={editFormData.sideEffects}
+                    onChange={(e) =>
+                      handleEditInputChange("sideEffects", e.target.value)
+                    }
+                    rows={6}
+                    required
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* delete confirmation dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Confirm Deletion
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete the vaccine{" "}
+                <strong>{selectedVaccineForDelete?.name}</strong> (ID:{" "}
+                {selectedVaccineForDelete?.vaccineId})? This action cannot be
+                undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleConfirmDeleteClick}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isConfirmDeleteDialogOpen}
+          onOpenChange={setIsConfirmDeleteDialogOpen}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2" />
+                Final Confirmation
+              </DialogTitle>
+              <DialogDescription>
+                To confirm deletion of{" "}
+                <strong>{selectedVaccineForDelete?.name}</strong> (ID:{" "}
+                {selectedVaccineForDelete?.vaccineId}), click the button below.
+                This action is irreversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={handleFinalDelete}
+                disabled={isLoading || deleteTimer > 0}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : deleteTimer > 0 ? (
+                  `Delete in ${deleteTimer}s`
+                ) : (
+                  "Delete Now"
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
