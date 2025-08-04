@@ -20,11 +20,11 @@ import {
   UserPlus,
   Baby,
   Syringe,
-  Settings,
   LogOut,
   Menu,
   X,
   Plus,
+  User,
   Building2,
   Users,
 } from "lucide-react";
@@ -68,9 +68,9 @@ const navigation = [
     icon: Plus,
   },
   {
-    name: "Settings",
-    href: "/admin/dashboard/settings",
-    icon: Settings,
+    name: "Profile",
+    href: "/admin/dashboard/profile",
+    icon: User,
   },
 ];
 
@@ -167,8 +167,8 @@ export function AdminDashboardLayout({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLogout}

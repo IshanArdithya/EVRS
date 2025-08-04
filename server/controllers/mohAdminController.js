@@ -12,11 +12,11 @@ function generateRandomPassword(length = 10) {
 }
 
 export const registerMOH = async (req, res) => {
-  const { name, contactNo, email, province, district, recordedBy } = req.body;
+  const { name, phoneNumber, email, province, district, recordedBy } = req.body;
 
   if (
     !name ||
-    !contactNo ||
+    !phoneNumber ||
     !email ||
     !province ||
     !district ||
@@ -40,7 +40,7 @@ export const registerMOH = async (req, res) => {
     const newMoh = await MOH.create({
       mohId: generateMohId(),
       name,
-      contactNo,
+      phoneNumber,
       email,
       province,
       district,
@@ -57,7 +57,7 @@ export const registerMOH = async (req, res) => {
         id: newMoh._id,
         mohId: newMoh.mohId,
         name: newMoh.name,
-        contactNo: newMoh.contactNo,
+        phoneNumber: newMoh.phoneNumber,
         email: newMoh.email,
         province: newMoh.province,
         district: newMoh.district,
@@ -124,7 +124,7 @@ export const getMOHById = async (req, res) => {
 
 export const updateMOHById = async (req, res) => {
   try {
-    const { name, contactNo, email, province, district } = req.body;
+    const { name, phoneNumber, email, province, district } = req.body;
 
     const moh = await MOH.findOne({ mohId: req.params.mohId });
 
@@ -133,7 +133,7 @@ export const updateMOHById = async (req, res) => {
     }
 
     moh.name = name || moh.name;
-    moh.contactNo = contactNo || moh.contactNo;
+    moh.phoneNumber = phoneNumber || moh.phoneNumber;
     moh.email = email || moh.email;
     moh.province = province || moh.province;
     moh.district = district || moh.district;

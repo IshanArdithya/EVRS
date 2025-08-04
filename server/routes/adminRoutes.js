@@ -42,12 +42,20 @@ import {
   updateVaccineById,
   deleteVaccineById,
 } from "../controllers/vaccineAdminController.js";
-import { registerAdmin } from "../controllers/adminController.js";
+import {
+  changePassword,
+  getAllAdmins,
+  registerAdmin,
+} from "../controllers/adminController.js";
+import { authenticateAdmin } from "../middleware/authenticateAdmin.js";
 
 const router = express.Router();
 
 // admin management
 router.post("/register-admin", registerAdmin);
+router.get("/admins", getAllAdmins);
+
+router.put("/profile/password", authenticateAdmin, changePassword);
 
 // patient management
 router.post("/register-patient", registerPatient);
