@@ -5,6 +5,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import sharedRoutes from "./routes/sharedRoutes.js";
 import citizenRoutes from "./routes/citizenRoutes.js";
+import hcpRoutes from "./routes/hcpRoutes.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -30,6 +31,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/shared", sharedRoutes);
 app.use("/api/citizen", citizenRoutes);
+app.use("/api/hcp", hcpRoutes);
 
 connectDB();
 
