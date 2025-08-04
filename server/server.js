@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import sharedRoutes from "./routes/sharedRoutes.js";
 import citizenRoutes from "./routes/citizenRoutes.js";
 import hcpRoutes from "./routes/hcpRoutes.js";
+import hospitalRoutes from "./routes/hospitalRoutes.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/shared", sharedRoutes);
 app.use("/api/citizen", citizenRoutes);
 app.use("/api/hcp", hcpRoutes);
+app.use("/api/hospital", hospitalRoutes);
 
 connectDB();
 

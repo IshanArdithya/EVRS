@@ -63,14 +63,34 @@ export const logoutHospital = (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 };
 
-export const getHospitalProfile = (req, res) => {
+export const getHospitalProfile = async (req, res) => {
   const token = req.cookies.hospital_token;
 
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    res.status(200).json({ loggedIn: true, hospital: decoded });
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const { hospitalId } = payload;
+
+    const hospital = await Hospital.findOne({ hospitalId })
+      .select("-password -pendingEmail -pendingPhone -__v")
+      .lean();
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Citizen not found" });
+    }
+
+    res.status(200).json({
+      loggedIn: true,
+      hospital: {
+        hospitalId: hospital.hospitalId,
+        name: hospital.name,
+        email: hospital.email,
+        phoneNumber: hospital.phoneNumber,
+        province: hospital.province,
+        district: hospital.district,
+      },
+    });
   } catch (error) {
     res.status(403).json({ message: "Invalid token" });
   }
