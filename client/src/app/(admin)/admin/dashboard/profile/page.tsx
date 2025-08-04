@@ -15,14 +15,13 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Shield, User, Mail, Lock, Save } from "lucide-react";
+import { Eye, EyeOff, Shield, User, Mail, Lock } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function AdminProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const [adminId, setAdminId] = useState<string>("");

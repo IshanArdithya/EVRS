@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/input-otp";
 import { Building2, Phone, Shield, Eye, EyeOff, Lock } from "lucide-react";
 import { HospitalLayout } from "@/components/hospital-layout";
-import type { HospitalUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
