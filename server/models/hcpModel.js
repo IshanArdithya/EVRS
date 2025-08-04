@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 
+const pendingSub = {
+  address: { type: String, default: "" },
+  code: { type: String, default: "" },
+  expires: { type: Date, default: null },
+};
+
 const hcpSchema = new mongoose.Schema(
   {
     hcpId: {
@@ -21,6 +27,11 @@ const hcpSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    phoneNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     nic: {
       type: String,
       required: true,
@@ -30,8 +41,21 @@ const hcpSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // otp for email
+    pendingEmail: {
+      address: pendingSub.address,
+      code: pendingSub.code,
+      expires: pendingSub.expires,
+    },
+
+    // otp for phone
+    pendingPhone: {
+      number: { type: String, default: "" },
+      code: pendingSub.code,
+      expires: pendingSub.expires,
+    },
     recordedBy: {
-      id: { type: String, required: true },
+      id: { type: String },
     },
   },
   { timestamps: true }
