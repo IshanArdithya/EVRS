@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   UserPlus,
-  Baby,
+  FileUser,
   Syringe,
   Activity,
   TrendingUp,
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
       title: "Citizens",
       value: "12,543",
       change: "+12%",
-      icon: Baby,
+      icon: FileUser,
       color: "text-purple-600",
     },
     {
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
       title: "Manage Citizens",
       description: "View and manage citizen accounts",
       href: "/admin/dashboard/manage-citizens",
-      icon: Baby,
+      icon: FileUser,
       color: "bg-purple-500",
     },
     {
@@ -129,9 +129,14 @@ export default function AdminDashboard() {
     <AdminDashboardLayout>
       <div className="space-y-6">
         {/* header */}
+
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome to EVRS Administration Panel</p>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">
+              Welcome to EVRS Administration Panel
+            </p>
+          </div>
         </div>
 
         {/* statistics cards */}

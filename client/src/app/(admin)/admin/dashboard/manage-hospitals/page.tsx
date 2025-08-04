@@ -437,14 +437,18 @@ export default function ManageHospitals() {
     <AdminDashboardLayout>
       <div className="space-y-6">
         <div className="space-y-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Hospital className="w-8 h-8 mr-3 text-red-600" />
-              Manage Hospitals
-            </h1>
-            <p className="text-gray-600">
-              View and manage hospital accounts in the system
-            </p>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <Hospital className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Manage Hospitals
+              </h1>
+              <p className="text-gray-600">
+                View and manage hospital accounts in the system
+              </p>
+            </div>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>

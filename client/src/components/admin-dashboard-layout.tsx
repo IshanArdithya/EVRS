@@ -18,7 +18,7 @@ import {
   Shield,
   LayoutDashboard,
   UserPlus,
-  Baby,
+  FileUser,
   Syringe,
   LogOut,
   Menu,
@@ -55,7 +55,7 @@ const navigation = [
   {
     name: "Manage Citizens",
     href: "/admin/dashboard/manage-citizens",
-    icon: Baby,
+    icon: FileUser,
   },
   {
     name: "Manage Vaccination Records",

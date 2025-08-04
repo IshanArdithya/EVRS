@@ -53,7 +53,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Baby,
   Plus,
   Copy,
   Check,
@@ -65,6 +64,7 @@ import {
   Search,
   Filter,
   Eye,
+  FileUser,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -313,14 +313,18 @@ export default function ManageCitizens() {
     <AdminDashboardLayout>
       <div className="space-y-6">
         <div className="space-y-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Baby className="w-8 h-8 mr-3 text-red-600" />
-              Manage Citizens
-            </h1>
-            <p className="text-gray-600">
-              View and manage citizen accounts in the system
-            </p>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <FileUser className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Manage Citizens
+              </h1>
+              <p className="text-gray-600">
+                View and manage citizen accounts in the system
+              </p>
+            </div>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
