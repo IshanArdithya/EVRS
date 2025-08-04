@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 
+const pendingSub = {
+  address: { type: String, default: "" },
+  code: { type: String, default: "" },
+  expires: { type: Date, default: null },
+};
+
 const mohSchema = new mongoose.Schema(
   {
     mohId: {
@@ -11,9 +17,10 @@ const mohSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    contactNo: {
+    phoneNumber: {
       type: String,
-      required: true,
+      unique: true,
+      sparse: true,
     },
     email: {
       type: String,
@@ -32,12 +39,16 @@ const mohSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    pendingPhone: {
+      number: { type: String, default: "" },
+      code: pendingSub.code,
+      expires: pendingSub.expires,
+    },
     recordedBy: {
-      id: { type: String, required: true },
+      id: { type: String },
       role: {
         type: String,
         enum: ["admin"],
-        required: true,
       },
     },
   },
