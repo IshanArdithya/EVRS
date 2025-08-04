@@ -905,9 +905,9 @@ export default function ManageHospitals() {
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             District
                           </TableHead>
-                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                          {/* <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Status
-                          </TableHead>
+                          </TableHead> */}
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Created Date
                           </TableHead>
@@ -935,7 +935,7 @@ export default function ManageHospitals() {
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {hospital.district}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                            {/* <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <Badge
                                 variant={
                                   hospital.status === "Active"
@@ -945,7 +945,7 @@ export default function ManageHospitals() {
                               >
                                 {hospital.status}
                               </Badge>
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {format(
                                 new Date(hospital.createdAt),
@@ -1092,7 +1092,7 @@ export default function ManageHospitals() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Status</Label>
                       <Badge
@@ -1105,7 +1105,7 @@ export default function ManageHospitals() {
                         {selectedHospital.status}
                       </Badge>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>

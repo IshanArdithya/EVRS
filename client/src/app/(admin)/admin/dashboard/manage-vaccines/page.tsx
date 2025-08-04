@@ -543,9 +543,9 @@ export default function ManageVaccines() {
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Description
                           </TableHead>
-                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                          {/* <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Status
-                          </TableHead>
+                          </TableHead> */}
                           <TableHead className="text-right whitespace-nowrap">
                             Actions
                           </TableHead>
@@ -565,9 +565,9 @@ export default function ManageVaccines() {
                                 {vaccine.sideEffects}
                               </div>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">
+                            {/* <TableCell className="hidden md:table-cell">
                               <Badge variant="secondary">Active</Badge>
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-2">
                                 <Button
@@ -674,12 +674,12 @@ export default function ManageVaccines() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Status</Label>
                       <Badge variant="secondary">Active</Badge>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
@@ -863,7 +863,7 @@ export default function ManageVaccines() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                {/* <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-green-800">
@@ -880,7 +880,7 @@ export default function ManageVaccines() {
                       Active
                     </Badge>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               <div className="flex gap-2">

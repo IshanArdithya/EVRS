@@ -930,9 +930,9 @@ export default function ManageMOH() {
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             District
                           </TableHead>
-                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                          {/* <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Status
-                          </TableHead>
+                          </TableHead> */}
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Created Date
                           </TableHead>
@@ -963,7 +963,7 @@ export default function ManageMOH() {
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {account.district}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                            {/* <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <Badge
                                 variant={
                                   account.status === "Active"
@@ -973,7 +973,7 @@ export default function ManageMOH() {
                               >
                                 {account.status}
                               </Badge>
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {format(
                                 new Date(account.createdAt),
@@ -1127,7 +1127,7 @@ export default function ManageMOH() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Status</Label>
                       <Badge
@@ -1140,7 +1140,7 @@ export default function ManageMOH() {
                         {selectedAccount.status}
                       </Badge>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>

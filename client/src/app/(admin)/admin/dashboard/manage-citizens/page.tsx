@@ -691,9 +691,9 @@ export default function ManageCitizens() {
                           <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Division
                           </TableHead>
-                          <TableHead className="hidden md:table-cell whitespace-nowrap">
+                          {/* <TableHead className="hidden md:table-cell whitespace-nowrap">
                             Status
-                          </TableHead>
+                          </TableHead> */}
                           <TableHead className="text-right whitespace-nowrap">
                             Actions
                           </TableHead>
@@ -717,9 +717,9 @@ export default function ManageCitizens() {
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               {citizen.division}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell whitespace-nowrap">
+                            {/* <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <Badge variant="secondary">Active</Badge>
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-1 md:space-x-2">
                                 <Button
@@ -846,12 +846,12 @@ export default function ManageCitizens() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Status</Label>
                       <Badge variant="secondary">Active</Badge>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
