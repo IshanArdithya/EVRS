@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
 import {
   Card,
@@ -55,7 +55,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { AdminUser } from "@/types";
 
 // roles
 const availableRoles = ["doctor", "nurse", "midwife"];
@@ -90,20 +89,6 @@ export default function ManageHealthcareProviders() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProviders = providers.slice(startIndex, endIndex);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +110,6 @@ export default function ManageHealthcareProviders() {
         role: formData.role,
         email: formData.email,
         nic: formData.nic,
-        recordedBy: {
-          id: currentUser?.adminId,
-          role: currentUser?.mainRole,
-        },
       });
 
       const { hcp, message } = response.data;
@@ -262,6 +243,13 @@ export default function ManageHealthcareProviders() {
   const handleViewDetails = (provider: any) => {
     setSelectedProvider(provider);
     setIsViewDialogOpen(true);
+  };
+
+  const RoleLabels: Record<string, string> = {
+    admin: "Admin",
+    hcp: "Healthcare Provider",
+    hospital: "Hospital",
+    moh: "Ministry of Health",
   };
 
   return (
@@ -698,6 +686,21 @@ export default function ManageHealthcareProviders() {
                         {selectedProvider.role.charAt(0).toUpperCase() +
                           selectedProvider.role.slice(1)}
                       </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Role</Label>
+                      <p className="text-sm">
+                        {selectedProvider.recordedBy?.role &&
+                        selectedProvider.recordedBy?.id
+                          ? `${
+                              RoleLabels[selectedProvider.recordedBy.role] ||
+                              selectedProvider.recordedBy.role
+                            } - ${selectedProvider.recordedBy.id}`
+                          : selectedProvider.recordedBy?.id}
+                      </p>
                     </div>
                   </div>
 

@@ -11,20 +11,19 @@ export const addVaccination = async (req, res) => {
     vaccineId,
     batchNumber,
     expiryDate,
-    recordedById,
-    recordedByRole,
     vaccinationLocation,
     division,
     additionalNotes,
   } = req.body;
+  const { adminId, role } = req.user;
 
   if (
     !citizenId ||
     !vaccineId ||
     !batchNumber ||
     !expiryDate ||
-    !recordedById ||
-    !recordedByRole ||
+    !adminId ||
+    !role ||
     !vaccinationLocation ||
     !division
   ) {
@@ -41,8 +40,8 @@ export const addVaccination = async (req, res) => {
       batchNumber,
       expiryDate,
       recordedBy: {
-        id: recordedById,
-        role: recordedByRole,
+        id: adminId,
+        role: role,
       },
       vaccinationLocation,
       division,

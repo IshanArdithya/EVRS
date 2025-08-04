@@ -66,14 +66,14 @@ export default function ManageVaccinationRecords() {
     vaccinationType: "",
     batchNumber: "",
     expiryDate: "",
-    healthcareProviderId: "",
+    // healthcareProviderId: "",
     vaccinationLocation: "",
     division: "",
     notes: "",
   });
 
   // add validation states
-  const [healthcareProviderError, setHealthcareProviderError] = useState("");
+  // const [healthcareProviderError, setHealthcareProviderError] = useState("");
 
   // filter states
   const [filterLocation, setFilterLocation] = useState("");
@@ -185,12 +185,12 @@ export default function ManageVaccinationRecords() {
     }
     setCitizenError("");
 
-    // HCP format check
-    if (!/^HCP\d{10}$/.test(formData.healthcareProviderId)) {
-      setHealthcareProviderError("HCP ID must be “HCP” + 10 digits");
-      setIsLoading(false);
-      return;
-    }
+    // // HCP format check
+    // if (!/^HCP\d{10}$/.test(formData.healthcareProviderId)) {
+    //   setHealthcareProviderError("HCP ID must be “HCP” + 10 digits");
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     // verify citizen exists
     const citizenExists = await validateCitizen(formData.citizenId);
@@ -201,16 +201,16 @@ export default function ManageVaccinationRecords() {
     }
     setCitizenError("");
 
-    // verify HCP exists
-    const hcpExists = await validateHCP(formData.healthcareProviderId);
-    if (!hcpExists) {
-      setHealthcareProviderError(
-        "Healthcare Provider not found. Please enter a valid ID"
-      );
-      setIsLoading(false);
-      return;
-    }
-    setHealthcareProviderError("");
+    // // verify HCP exists
+    // const hcpExists = await validateHCP(formData.healthcareProviderId);
+    // if (!hcpExists) {
+    //   setHealthcareProviderError(
+    //     "Healthcare Provider not found. Please enter a valid ID"
+    //   );
+    //   setIsLoading(false);
+    //   return;
+    // }
+    // setHealthcareProviderError("");
 
     // checks passed - submit to add-vaccination
     try {
@@ -219,7 +219,7 @@ export default function ManageVaccinationRecords() {
         vaccineId: formData.vaccinationType,
         batchNumber: formData.batchNumber,
         expiryDate: formData.expiryDate,
-        healthcareProviderId: formData.healthcareProviderId,
+        // healthcareProviderId: formData.healthcareProviderId,
         vaccinationLocation: formData.vaccinationLocation,
         division: formData.division,
         additionalNotes: formData.notes || "",
@@ -255,12 +255,12 @@ export default function ManageVaccinationRecords() {
       vaccinationType: "",
       batchNumber: "",
       expiryDate: "",
-      healthcareProviderId: "",
+      // healthcareProviderId: "",
       vaccinationLocation: "",
       division: "",
       notes: "",
     });
-    setHealthcareProviderError("");
+    // setHealthcareProviderError("");
   };
 
   const getVaccineBadgeColor = (vaccine: string) => {
@@ -286,13 +286,20 @@ export default function ManageVaccinationRecords() {
     }
   };
 
-  const validateHCP = async (hcpId: string) => {
-    try {
-      await api.get<unknown>(`/admin/hcp/${hcpId}`);
-      return true;
-    } catch {
-      return false;
-    }
+  // const validateHCP = async (hcpId: string) => {
+  //   try {
+  //     await api.get<unknown>(`/admin/hcp/${hcpId}`);
+  //     return true;
+  //   } catch {
+  //     return false;
+  //   }
+  // };
+
+  const RoleLabels: Record<string, string> = {
+    admin: "Admin",
+    hcp: "Healthcare Provider",
+    hospital: "Hospital",
+    moh: "Ministry of Health",
   };
 
   return (
@@ -398,7 +405,7 @@ export default function ManageVaccinationRecords() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="healthcareProviderId">
                     Healthcare Provider ID *
                   </Label>
@@ -427,7 +434,7 @@ export default function ManageVaccinationRecords() {
                       {healthcareProviderError}
                     </p>
                   )}
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <Label htmlFor="vaccinationLocation">
                     Vaccination Location *
@@ -817,7 +824,15 @@ export default function ManageVaccinationRecords() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <Label className="text-sm font-medium">Recorded By</Label>
-                      <p className="text-sm">{selectedRecord.recordedBy?.id}</p>
+                      <p className="text-sm">
+                        {selectedRecord.recordedBy?.role &&
+                        selectedRecord.recordedBy?.id
+                          ? `${
+                              RoleLabels[selectedRecord.recordedBy.role] ||
+                              selectedRecord.recordedBy.role
+                            } - ${selectedRecord.recordedBy.id}`
+                          : selectedRecord.recordedBy?.id}
+                      </p>
                     </div>
                   </div>
 
@@ -906,12 +921,12 @@ export default function ManageVaccinationRecords() {
                   </p>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-lg">
+                {/* <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">Healthcare Provider ID</p>
                   <p className="text-sm text-gray-600">
                     {formData.healthcareProviderId}
                   </p>
-                </div>
+                </div> */}
 
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">Location</p>

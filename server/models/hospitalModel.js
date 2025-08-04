@@ -46,10 +46,11 @@ const hospitalSchema = new mongoose.Schema(
       expires: pendingSub.expires,
     },
     recordedBy: {
-      id: { type: String },
+      id: { type: String, required: true },
       role: {
         type: String,
         enum: ["admin"],
+        required: true,
       },
     },
   },

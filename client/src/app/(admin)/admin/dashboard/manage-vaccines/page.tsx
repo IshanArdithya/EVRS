@@ -5,7 +5,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { AdminUser, allVaccines } from "@/types";
+import { allVaccines } from "@/types";
 
 export default function ManageVaccines() {
   const [vaccines, setVaccines] = useState<allVaccines[]>([]);
@@ -68,20 +68,6 @@ export default function ManageVaccines() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentVaccines = vaccines.slice(startIndex, endIndex);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
 
   // apply filters
   const handleApplyFilter = async () => {
@@ -134,10 +120,6 @@ export default function ManageVaccines() {
       const response = await api.post("/admin/register-vaccine", {
         name: formData.name,
         sideEffects: formData.sideEffects,
-        recordedBy: {
-          id: currentUser?.adminId,
-          role: currentUser?.mainRole,
-        },
       });
 
       const { vaccine, message } = response.data;

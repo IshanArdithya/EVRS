@@ -25,7 +25,11 @@ const vaccinationSchema = new mongoose.Schema(
     },
     recordedBy: {
       id: { type: String, required: true },
-      role: { type: String, enum: ["hcp", "hospital", "moh"], required: true },
+      role: {
+        type: String,
+        enum: ["hcp", "hospital", "moh", "admin"],
+        required: true,
+      },
     },
     vaccinationLocation: {
       type: String,

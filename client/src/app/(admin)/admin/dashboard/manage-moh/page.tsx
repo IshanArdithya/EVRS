@@ -111,7 +111,7 @@ export default function ManageMOH() {
 
   const [formData, setFormData] = useState({
     name: "",
-    contactNo: "",
+    phoneNumber: "",
     email: "",
     province: "",
     district: "",
@@ -123,20 +123,6 @@ export default function ManageMOH() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentAccounts = mohAccounts.slice(startIndex, endIndex);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
 
   // get districts for selected province (filter)
   const getFilterDistricts = () => {
@@ -207,7 +193,7 @@ export default function ManageMOH() {
 
     if (
       !formData.name ||
-      !formData.contactNo ||
+      !formData.phoneNumber ||
       !formData.email ||
       !formData.province ||
       !formData.district
@@ -225,14 +211,10 @@ export default function ManageMOH() {
     try {
       const response = await api.post("/admin/register-moh", {
         name: formData.name,
-        contactNo: formData.contactNo,
+        phoneNumber: formData.phoneNumber,
         email: formData.email,
         province: formData.province,
         district: formData.district,
-        recordedBy: {
-          id: currentUser?.adminId,
-          role: currentUser?.mainRole,
-        },
       });
 
       const { moh, message } = response.data;
@@ -294,7 +276,7 @@ export default function ManageMOH() {
   const resetForm = () => {
     setFormData({
       name: "",
-      contactNo: "",
+      phoneNumber: "",
       email: "",
       province: "",
       district: "",
@@ -327,6 +309,13 @@ export default function ManageMOH() {
   const handleViewDetails = (account: any) => {
     setSelectedAccount(account);
     setIsViewDialogOpen(true);
+  };
+
+  const RoleLabels: Record<string, string> = {
+    admin: "Admin",
+    hcp: "Healthcare Provider",
+    hospital: "Hospital",
+    moh: "Ministry of Health",
   };
 
   return (
@@ -372,10 +361,10 @@ export default function ManageMOH() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contactNo">Contact Number *</Label>
+                  <Label htmlFor="phoneNumber">Contact Number *</Label>
                   <Input
-                    id="contactNo"
-                    value={formData.contactNo}
+                    id="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={(e) =>
                       handleInputChange("contactNo", e.target.value)
                     }
@@ -839,7 +828,7 @@ export default function ManageMOH() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
-                              {account.contactNo}
+                              {account.phoneNumber}
                             </TableCell>
                             <TableCell className="hidden md:table-cell whitespace-nowrap">
                               <div className="max-w-[150px] truncate">
@@ -969,7 +958,7 @@ export default function ManageMOH() {
                       <Label className="text-sm font-medium">
                         Contact Number
                       </Label>
-                      <p className="text-sm">{selectedAccount.contactNo}</p>
+                      <p className="text-sm">{selectedAccount.phoneNumber}</p>
                     </div>
                   </div>
 
@@ -993,6 +982,21 @@ export default function ManageMOH() {
                     <div>
                       <Label className="text-sm font-medium">District</Label>
                       <p className="text-sm">{selectedAccount.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Recorded By</Label>
+                      <p className="text-sm">
+                        {selectedAccount.recordedBy?.role &&
+                        selectedAccount.recordedBy?.id
+                          ? `${
+                              RoleLabels[selectedAccount.recordedBy.role] ||
+                              selectedAccount.recordedBy.role
+                            } - ${selectedAccount.recordedBy.id}`
+                          : selectedAccount.recordedBy?.id}
+                      </p>
                     </div>
                   </div>
 
@@ -1079,7 +1083,7 @@ export default function ManageMOH() {
                   <div>
                     <p className="text-sm font-medium">Contact Number</p>
                     <p className="text-sm text-gray-600">
-                      {formData.contactNo}
+                      {formData.phoneNumber}
                     </p>
                   </div>
                 </div>

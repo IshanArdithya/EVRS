@@ -6,9 +6,10 @@ function generateVaccineId() {
 }
 
 export const registerVaccine = async (req, res) => {
-  const { name, sideEffects, recordedBy } = req.body;
+  const { name, sideEffects } = req.body;
+  const { adminId, role } = req.user;
 
-  if (!name || !recordedBy?.id || !recordedBy?.role) {
+  if (!name || !adminId || !role) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -23,8 +24,8 @@ export const registerVaccine = async (req, res) => {
       name,
       sideEffects: sideEffects || "",
       recordedBy: {
-        id: recordedBy.id,
-        role: recordedBy.role,
+        id: adminId,
+        role: role,
       },
     });
 

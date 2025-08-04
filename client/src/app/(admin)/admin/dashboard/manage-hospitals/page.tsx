@@ -124,20 +124,6 @@ export default function ManageHospitals() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentHospitals = hospitals.slice(startIndex, endIndex);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
 
   // get districts for selected province (filter)
   const getFilterDistricts = () => {
@@ -228,10 +214,6 @@ export default function ManageHospitals() {
         email: formData.email,
         province: formData.province,
         district: formData.district,
-        recordedBy: {
-          id: currentUser?.adminId,
-          role: currentUser?.mainRole,
-        },
       });
 
       const { hospital, message } = response.data;
@@ -320,6 +302,13 @@ export default function ManageHospitals() {
   const handleViewDetails = (hospital: any) => {
     setSelectedHospital(hospital);
     setIsViewDialogOpen(true);
+  };
+
+  const RoleLabels: Record<string, string> = {
+    admin: "Admin",
+    hcp: "Healthcare Provider",
+    hospital: "Hospital",
+    moh: "Ministry of Health",
   };
 
   return (
@@ -961,6 +950,21 @@ export default function ManageHospitals() {
                     <div>
                       <Label className="text-sm font-medium">District</Label>
                       <p className="text-sm">{selectedHospital.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Recorded By</Label>
+                      <p className="text-sm">
+                        {selectedHospital.recordedBy?.role &&
+                        selectedHospital.recordedBy?.id
+                          ? `${
+                              RoleLabels[selectedHospital.recordedBy.role] ||
+                              selectedHospital.recordedBy.role
+                            } - ${selectedHospital.recordedBy.id}`
+                          : selectedHospital.recordedBy?.id}
+                      </p>
                     </div>
                   </div>
 

@@ -20,8 +20,8 @@ export const registerPatient = async (req, res) => {
     district,
     division,
     guardianNIC,
-    recordedBy,
   } = req.body;
+  const { adminId, role } = req.user;
 
   try {
     if (
@@ -32,8 +32,8 @@ export const registerPatient = async (req, res) => {
       !district ||
       !division ||
       !guardianNIC ||
-      !recordedBy?.id ||
-      !recordedBy?.role
+      !adminId ||
+      !role
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -58,8 +58,8 @@ export const registerPatient = async (req, res) => {
       division,
       guardianNIC,
       recordedBy: {
-        id: recordedBy.id,
-        role: recordedBy.role,
+        id: adminId,
+        role: role,
       },
       password: hashedPassword,
     });

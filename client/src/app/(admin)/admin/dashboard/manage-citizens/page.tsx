@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
 import {
   Card,
@@ -69,7 +69,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
-import { AdminUser } from "@/types";
 
 const sriLankanDistricts = [
   "Ampara",
@@ -136,20 +135,6 @@ export default function ManageCitizens() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentCitizens = citizens.slice(startIndex, endIndex);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
 
   // apply filters
   const handleApplyFilter = async () => {
@@ -229,10 +214,6 @@ export default function ManageCitizens() {
         district: formData.district,
         division: formData.division,
         guardianNIC: formData.guardianNic,
-        recordedBy: {
-          id: currentUser?.adminId,
-          role: currentUser?.mainRole,
-        },
       });
 
       const { patient, message } = response.data;
@@ -319,6 +300,13 @@ export default function ManageCitizens() {
   const handleViewDetails = (citizen: any) => {
     setSelectedCitizen(citizen);
     setIsViewDialogOpen(true);
+  };
+
+  const RoleLabels: Record<string, string> = {
+    admin: "Admin",
+    hcp: "Healthcare Provider",
+    hospital: "Hospital",
+    moh: "Ministry of Health",
   };
 
   return (
@@ -840,6 +828,21 @@ export default function ManageCitizens() {
                     <div>
                       <Label className="text-sm font-medium">Division</Label>
                       <p className="text-sm">{selectedCitizen.division}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">Recorded By</Label>
+                      <p className="text-sm">
+                        {selectedCitizen.recordedBy?.role &&
+                        selectedCitizen.recordedBy?.id
+                          ? `${
+                              RoleLabels[selectedCitizen.recordedBy.role] ||
+                              selectedCitizen.recordedBy.role
+                            } - ${selectedCitizen.recordedBy.id}`
+                          : selectedCitizen.recordedBy?.id}
+                      </p>
                     </div>
                   </div>
 

@@ -13,15 +13,9 @@ function generateRandomPassword(length = 10) {
 
 export const registerHospital = async (req, res) => {
   const { name, email, province, district, recordedBy } = req.body;
+  const { adminId, role: adminRole } = req.user;
 
-  if (
-    !name ||
-    !email ||
-    !province ||
-    !district ||
-    !recordedBy?.id ||
-    !recordedBy?.role
-  ) {
+  if (!name || !email || !province || !district || !adminId || !adminRole) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -43,8 +37,8 @@ export const registerHospital = async (req, res) => {
       province,
       district,
       recordedBy: {
-        id: recordedBy.id,
-        role: recordedBy.role,
+        id: adminId,
+        role: adminRole,
       },
       password: hashedPassword,
     });
