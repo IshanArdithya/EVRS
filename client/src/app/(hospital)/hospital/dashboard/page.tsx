@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HospitalLayout } from "@/components/hospital-layout";
+import { HospitalLayout } from "@/app/(hospital)/hospital/components/hospital-layout";
 import { hospitalkeyfeatures, support } from "@/constants/system-information";
 import { hospitalQA } from "@/constants/quick-actions";
 import { useState } from "react";

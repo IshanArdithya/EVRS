@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import DashboardLayout from "@/components/dashboard-layout";
+import DashboardLayout from "@/app/(patient)/components/dashboard-layout";
 import {
   Card,
   CardContent,
@@ -24,16 +24,10 @@ import {
   Calendar,
   Info,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function NewVaccinationPage() {
-  const router = useRouter();
-
-  const [citizenId, setCitizenId] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const { citizen, loading } = useUser();
 
   const [qrData, setQrData] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
@@ -41,23 +35,8 @@ export default function NewVaccinationPage() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isExpired, setIsExpired] = useState(false);
 
-  useEffect(() => {
-    api
-      .get("/auth/get/citizen")
-      .then((res) => {
-        const u = res.data.citizen;
-        setCitizenId(u.citizenId);
-        setFirstName(u.firstName);
-        setLastName(u.lastName);
-        setBirthDate(u.birthDate);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
-
   const generateQRCode = useCallback(() => {
-    if (!citizenId) return;
+    if (!citizen?.citizenId) return;
 
     const newSessionId = `VRQR${Date.now()}${Math.random()
       .toString(36)
@@ -66,11 +45,11 @@ export default function NewVaccinationPage() {
     const expiry = new Date(timestamp + 5 * 60 * 1000);
 
     setSessionId(newSessionId);
-    setQrData(`VACC_REQ:${newSessionId}:${citizenId}:${timestamp}`);
+    setQrData(`VACC_REQ:${newSessionId}:${citizen.citizenId}:${timestamp}`);
     setExpiryTime(expiry);
     setTimeRemaining(expiry.getTime() - timestamp);
     setIsExpired(false);
-  }, [citizenId]);
+  }, [citizen]);
 
   useEffect(() => {
     generateQRCode();
@@ -98,6 +77,22 @@ export default function NewVaccinationPage() {
     const seconds = Math.floor((milliseconds % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <p>Loading your profile…</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!citizen) {
+    return (
+      <DashboardLayout>
+        <p>Please log in to view your dashboard.</p>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -131,7 +126,7 @@ export default function NewVaccinationPage() {
                 <User className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                 <div>
                   <h4 className="font-medium">Full Name</h4>
-                  <p className="text-sm text-muted-foreground">{`${firstName} ${lastName}`}</p>
+                  <p className="text-sm text-muted-foreground">{`${citizen.firstName} ${citizen.lastName}`}</p>
                 </div>
               </div>
 
@@ -140,7 +135,7 @@ export default function NewVaccinationPage() {
                 <div>
                   <h4 className="font-medium">Citizen ID</h4>
                   <p className="text-sm text-muted-foreground font-mono">
-                    {citizenId}
+                    {citizen.citizenId}
                   </p>
                 </div>
               </div>
@@ -149,7 +144,9 @@ export default function NewVaccinationPage() {
                 <Calendar className="h-5 w-5 text-primary-DEFAULT mt-0.5" />
                 <div>
                   <h4 className="font-medium">Birth Date</h4>
-                  <p className="text-sm text-muted-foreground">{birthDate}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {citizen.birthDate}
+                  </p>
                 </div>
               </div>
             </div>

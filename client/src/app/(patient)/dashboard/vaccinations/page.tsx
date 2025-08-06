@@ -1,6 +1,6 @@
 "use client";
 
-import DashboardLayout from "@/components/dashboard-layout";
+import DashboardLayout from "@/app/(patient)/components/dashboard-layout";
 import VaccinationCard from "@/components/vaccination-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,23 +9,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Record } from "@/types";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function VaccinationsPage() {
   const [vaccinations, setVaccinations] = useState<Record[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const { citizen, loading } = useUser();
 
   useEffect(() => {
-    const stored = localStorage.getItem("citizen");
-    if (!stored) return router.replace("/login");
-
-    const { citizenId } = JSON.parse(stored);
-
+    if (!citizen?.citizenId) return;
     api
-      .get(`/citizen/vaccinations/${citizenId}`)
+      .get(`/citizen/vaccinations/${citizen?.citizenId}`)
       .then((res) => setVaccinations(res.data.records))
       .catch(() => router.replace("/login"));
-  }, [router]);
+  }, [citizen?.citizenId, router]);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return vaccinations;
@@ -38,6 +36,22 @@ export default function VaccinationsPage() {
     const vaccinationDate = new Date(v.date);
     return vaccinationDate.getFullYear() === currentYear;
   });
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <p>Loading your profile…</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!citizen) {
+    return (
+      <DashboardLayout>
+        <p>Please log in to view your dashboard.</p>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

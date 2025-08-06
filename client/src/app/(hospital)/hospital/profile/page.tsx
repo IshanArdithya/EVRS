@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,15 +29,17 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Building2, Phone, Shield, Eye, EyeOff, Lock } from "lucide-react";
-import { HospitalLayout } from "@/components/hospital-layout";
+import { HospitalLayout } from "@/app/(hospital)/hospital/components/hospital-layout";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function HospitalProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { hospital, loading } = useUser();
 
   const [newPhone, setNewPhone] = useState("");
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
@@ -62,21 +65,31 @@ export default function HospitalProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    api
-      .get("/auth/get/hospital")
-      .then((res) => {
-        const u = res.data.hospital;
-        setHospitalId(u.hospitalId || "");
-        setEmail(u.email || "");
-        setHospitalName(u.name || "");
-        setPhone(u.phoneNumber || "");
-        setProvince(u.province || "");
-        setDistrict(u.district || "");
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
+    if (!hospital) return;
+
+    setHospitalId(hospital.hospitalId || "");
+    setEmail(hospital.email || "");
+    setHospitalName(hospital.name || "");
+    setPhone(hospital.phoneNumber || "");
+    setProvince(hospital.province || "");
+    setDistrict(hospital.district || "");
+  }, [hospital]);
+
+  if (loading) {
+    return (
+      <HospitalLayout>
+        <p>Loading your profile…</p>
+      </HospitalLayout>
+    );
+  }
+
+  if (!hospital) {
+    return (
+      <HospitalLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HospitalLayout>
+    );
+  }
 
   const handlePhoneChangeRequest = async () => {
     if (

@@ -49,10 +49,11 @@ import {
   FileUser,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { MOHLayout } from "@/components/moh-layout";
+import { MOHLayout } from "@/app/(moh)/moh/components/moh-layout";
 import api from "@/lib/api";
-import { MOHUser, Vaccine } from "@/types";
+import { Vaccine } from "@/types";
 import { format } from "date-fns";
+import { useUser } from "@/context/UserContext";
 
 export default function MOHDashboard() {
   const [citizenId, setCitizenId] = useState("");
@@ -73,10 +74,10 @@ export default function MOHDashboard() {
   });
 
   const { toast } = useToast();
+  const { moh, loading } = useUser();
 
   const [generatedVaccinationId, setGeneratedVaccinationId] = useState("");
   const [citizenError, setCitizenError] = useState("");
-  const [currentUser, setCurrentUser] = useState<MOHUser | null>(null);
 
   const selectedVac = vaccines.find(
     (v) => v.vaccineId === formData.vaccinationType
@@ -91,18 +92,21 @@ export default function MOHDashboard() {
       .catch((err) => console.error("Failed to load vaccines", err));
   }, [isAddDialogOpen]);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("moh");
-    if (storedUser) {
-      try {
-        const parsedUser: MOHUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <MOHLayout>
+        <p>Loading your profile…</p>
+      </MOHLayout>
+    );
+  }
+
+  if (!moh) {
+    return (
+      <MOHLayout>
+        <p>Please log in to view your dashboard.</p>
+      </MOHLayout>
+    );
+  }
 
   const handleSearchCitizen = async () => {
     if (!citizenId.trim()) {
@@ -161,7 +165,7 @@ export default function MOHDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUser || !currentUser.mohId) {
+    if (!moh.mohId) {
       toast({
         title: "Missing MOH ID",
         description: "Re-login required. Your session may have expired.",
@@ -186,8 +190,8 @@ export default function MOHDashboard() {
         vaccineId: formData.vaccinationType,
         batchNumber: formData.batchNumber,
         expiryDate: formData.expiryDate,
-        recordedById: currentUser.mohId,
-        recordedByRole: currentUser.mainRole,
+        recordedById: moh.mohId,
+        recordedByRole: moh.mainRole,
         vaccinationLocation: formData.vaccinationLocation,
         division: formData.division,
         additionalNotes: formData.notes || "",

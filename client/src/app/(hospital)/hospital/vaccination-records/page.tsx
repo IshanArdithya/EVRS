@@ -4,7 +4,7 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
-import { HospitalLayout } from "@/components/hospital-layout";
+import { HospitalLayout } from "@/app/(hospital)/hospital/components/hospital-layout";
 import {
   Card,
   CardContent,
@@ -50,9 +50,10 @@ import {
   FileUser,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { HospitalUser, Vaccine } from "@/types";
+import { Vaccine } from "@/types";
 import api from "@/lib/api";
 import { format } from "date-fns";
+import { useUser } from "@/context/UserContext";
 
 export default function HospitalDashboard() {
   const [citizenId, setCitizenId] = useState("");
@@ -73,10 +74,10 @@ export default function HospitalDashboard() {
   });
 
   const { toast } = useToast();
+  const { hospital, loading } = useUser();
 
   const [generatedVaccinationId, setGeneratedVaccinationId] = useState("");
   const [citizenError, setCitizenError] = useState("");
-  const [currentUser, setCurrentUser] = useState<HospitalUser | null>(null);
 
   const selectedVac = vaccines.find(
     (v) => v.vaccineId === formData.vaccinationType
@@ -91,18 +92,21 @@ export default function HospitalDashboard() {
       .catch((err) => console.error("Failed to load vaccines", err));
   }, [isAddDialogOpen]);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("hospital");
-    if (storedUser) {
-      try {
-        const parsedUser: HospitalUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <HospitalLayout>
+        <p>Loading your profile…</p>
+      </HospitalLayout>
+    );
+  }
+
+  if (!hospital) {
+    return (
+      <HospitalLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HospitalLayout>
+    );
+  }
 
   const handleSearchCitizen = async () => {
     if (!citizenId.trim()) {
@@ -161,7 +165,7 @@ export default function HospitalDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUser || !currentUser.hospitalId) {
+    if (!hospital.hospitalId) {
       toast({
         title: "Missing Hospital ID",
         description: "Re-login required. Your session may have expired.",
@@ -186,8 +190,8 @@ export default function HospitalDashboard() {
         vaccineId: formData.vaccinationType,
         batchNumber: formData.batchNumber,
         expiryDate: formData.expiryDate,
-        recordedById: currentUser.hospitalId,
-        recordedByRole: currentUser.mainRole,
+        recordedById: hospital.hospitalId,
+        recordedByRole: hospital.mainRole,
         vaccinationLocation: formData.vaccinationLocation,
         division: formData.division,
         additionalNotes: formData.notes || "",

@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MOHLayout } from "@/components/moh-layout";
+import { MOHLayout } from "@/app/(moh)/moh/components/moh-layout";
 import { mohkeyfeatures, support } from "@/constants/system-information";
 import { mohQA } from "@/constants/quick-actions";
 import { CreateNewbornDialog } from "../components/create-newborn-dialog";

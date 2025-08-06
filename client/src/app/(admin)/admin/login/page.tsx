@@ -41,15 +41,7 @@ export default function AdminLogin() {
     }
 
     try {
-      const res = await api.post("/auth/login/admin", { adminId, password });
-
-      const userData = res.data.admin;
-      const userToStore = {
-        ...userData,
-        mainRole: "admin",
-      };
-
-      localStorage.setItem("admin", JSON.stringify(userToStore));
+      await api.post("/auth/login/admin", { adminId, password });
 
       router.replace("/admin/dashboard");
     } catch (err: any) {

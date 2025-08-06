@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,15 +29,15 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Building, Phone, Shield, Eye, EyeOff, Lock } from "lucide-react";
-import { MOHLayout } from "@/components/moh-layout";
+import { MOHLayout } from "@/app/(moh)/moh/components/moh-layout";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function MOHProfilePage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { moh, loading } = useUser();
 
   const [newPhone, setNewPhone] = useState("");
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
@@ -62,21 +63,31 @@ export default function MOHProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    api
-      .get("/auth/get/moh")
-      .then((res) => {
-        const u = res.data.moh;
-        setMohId(u.mohId || "");
-        setEmail(u.email || "");
-        setName(u.name || "");
-        setPhone(u.phoneNumber || "");
-        setProvince(u.province || "");
-        setDistrict(u.district || "");
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
+    if (!moh) return;
+
+    setMohId(moh.mohId || "");
+    setEmail(moh.email || "");
+    setName(moh.name || "");
+    setPhone(moh.phoneNumber || "");
+    setProvince(moh.province || "");
+    setDistrict(moh.district || "");
+  }, [moh]);
+
+  if (loading) {
+    return (
+      <MOHLayout>
+        <p>Loading your profile…</p>
+      </MOHLayout>
+    );
+  }
+
+  if (!moh) {
+    return (
+      <MOHLayout>
+        <p>Please log in to view your dashboard.</p>
+      </MOHLayout>
+    );
+  }
 
   const handlePhoneChangeRequest = async () => {
     if (

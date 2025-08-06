@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/dashboard-layout";
+import DashboardLayout from "@/app/(patient)/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

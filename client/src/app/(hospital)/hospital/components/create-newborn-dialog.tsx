@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Baby,
   User,
@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { HospitalUser } from "@/types";
+import { useUser } from "@/context/UserContext";
+import { Spinner } from "@/components/ui/spinner";
 
 const districts = [
   "Ampara",
@@ -88,21 +89,16 @@ export function CreateNewbornDialog({
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState<HospitalUser | null>(null);
   const [generatedCitizenId, setGeneratedCitizenId] = useState("");
+  const { hospital, loading } = useUser();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("hospital");
-    if (storedUser) {
-      try {
-        const parsedUser: HospitalUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (!hospital) {
+    return <p>Please log in to view your dashboard.</p>;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,8 +142,8 @@ export function CreateNewbornDialog({
         division: formData.division,
         guardianNIC: formData.guardianNic,
         recordedBy: {
-          id: currentUser?.hospitalId,
-          role: currentUser?.mainRole,
+          id: hospital.hospitalId,
+          role: hospital.mainRole,
         },
       });
 

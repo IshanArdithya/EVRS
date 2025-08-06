@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { AdminDashboardLayout } from "@/app/(admin)/admin/components/admin-dashboard-layout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,12 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Shield, User, Mail, Lock } from "lucide-react";
 import api from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function AdminProfilePage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { admin, loading } = useUser();
 
   const [adminId, setAdminId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -35,17 +35,26 @@ export default function AdminProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    api
-      .get("/auth/get/admin")
-      .then((res) => {
-        const u = res.data.admin;
-        setAdminId(u.adminId || "");
-        setEmail(u.email || "");
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
+    if (!admin) return;
+    setAdminId(admin.adminId || "");
+    setEmail(admin.email || "");
+  }, [admin]);
+
+  if (loading) {
+    return (
+      <AdminDashboardLayout>
+        <p>Loading your profile…</p>
+      </AdminDashboardLayout>
+    );
+  }
+
+  if (!admin) {
+    return (
+      <AdminDashboardLayout>
+        <p>Please log in to view your dashboard.</p>
+      </AdminDashboardLayout>
+    );
+  }
 
   const handlePasswordChange = async () => {
     if (!currentPassword.trim()) {

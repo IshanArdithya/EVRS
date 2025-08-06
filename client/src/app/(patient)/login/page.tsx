@@ -35,17 +35,10 @@ export default function LoginPage() {
     }
 
     try {
-      const res = await api.post("/auth/login/citizen", {
+      await api.post("/auth/login/citizen", {
         citizenId,
         password,
       });
-
-      const userData = res.data.citizen;
-      const userToStore = {
-        ...userData,
-      };
-
-      localStorage.setItem("citizen", JSON.stringify(userToStore));
 
       router.replace("/dashboard");
     } catch (err: any) {

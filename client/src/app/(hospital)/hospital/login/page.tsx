@@ -41,18 +41,10 @@ export default function HospitalLogin() {
     }
 
     try {
-      const res = await api.post("/auth/login/hospital", {
+      await api.post("/auth/login/hospital", {
         hospitalId,
         password,
       });
-
-      const userData = res.data.hospital;
-      const userToStore = {
-        ...userData,
-        mainRole: "hospital",
-      };
-
-      localStorage.setItem("hospital", JSON.stringify(userToStore));
 
       router.replace("/hospital/dashboard");
     } catch (err: any) {

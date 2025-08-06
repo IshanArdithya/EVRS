@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,16 +29,17 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { User, Mail, Phone, Shield, Eye, EyeOff, Lock } from "lucide-react";
-import { HealthcareProviderLayout } from "@/components/healthcare-provider-layout";
-import type { HCPUser } from "@/types";
+import { HealthcareProviderLayout } from "@/app/(healthcare-provider)/healthcare-provider/components/healthcare-provider-layout";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function HealthcareProviderProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { hcp, loading } = useUser();
 
   const [newEmail, setNewEmail] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -71,21 +73,31 @@ export default function HealthcareProviderProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    api
-      .get("/auth/get/hcp")
-      .then((res) => {
-        const u = res.data.hcp;
-        setHcpId(u.hcpId || "");
-        setEmail(u.email || "");
-        setFullName(u.fullName || "");
-        setPhone(u.phoneNumber || "");
-        setRole(u.role || "");
-        setNic(u.nic || "");
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
+    if (!hcp) return;
+
+    setHcpId(hcp.hcpId || "");
+    setEmail(hcp.email || "");
+    setFullName(hcp.fullName || "");
+    setPhone(hcp.phoneNumber || "");
+    setRole(hcp.role || "");
+    setNic(hcp.nic || "");
+  }, [hcp]);
+
+  if (loading) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Loading your profile…</p>
+      </HealthcareProviderLayout>
+    );
+  }
+
+  if (!hcp) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HealthcareProviderLayout>
+    );
+  }
 
   const handleEmailChangeRequest = async () => {
     if (!newEmail.trim() || newEmail.trim() === email) {

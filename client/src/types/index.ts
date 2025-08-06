@@ -95,6 +95,7 @@ export type HCPUser = {
   fullName: string;
   email: string;
   nic: string;
+  phoneNumber: string;
   createdAt: string;
 };
 
@@ -105,6 +106,7 @@ export type HospitalUser = {
   email: string;
   district: string;
   province: string;
+  phoneNumber: string;
 };
 
 export type MOHUser = {
@@ -112,6 +114,9 @@ export type MOHUser = {
   mainRole: "moh" | string;
   name: string;
   email: string;
+  phoneNumber: string;
+  province: string;
+  district: string;
 };
 
 export type AdminUser = {
@@ -125,6 +130,17 @@ export type CitizenUser = {
   firstName: string;
   lastName: string;
   email: string;
+  birthDate: string;
+  phoneNumber: string;
+  address: string;
+
+  bloodType?: string;
+  allergies?: string[];
+  medicalConditions?: string[];
+  emergencyContact?: {
+    name: string;
+    phoneNumber: string;
+  };
 };
 
 export type Record = {

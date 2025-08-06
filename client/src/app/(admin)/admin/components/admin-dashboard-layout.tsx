@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -29,7 +29,8 @@ import {
   Users,
 } from "lucide-react";
 import api from "@/lib/api";
-import { AdminUser } from "@/types";
+import { useUser } from "@/context/UserContext";
+import { Spinner } from "@/components/ui/spinner";
 
 const navigation = [
   {
@@ -82,28 +83,30 @@ export function AdminDashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
+  const { admin, loading } = useUser();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("admin");
-    if (storedUser) {
-      try {
-        const parsedUser: AdminUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Please log in to view your dashboard.</p>
+        <Button onClick={() => router.push("/login")}>Go to Login</Button>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
       const res = await api.post("/auth/logout/admin");
 
       if (res.status === 200) {
-        localStorage.removeItem("admin");
-
         router.replace("/admin/login");
       } else {
         console.error("Logout failed with status:", res.status);
@@ -161,7 +164,7 @@ export function AdminDashboardLayout({
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">Administrator</p>
                       <p className="text-xs text-muted-foreground">
-                        {currentUser?.email}
+                        {admin.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>

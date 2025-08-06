@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { AdminDashboardLayout } from "@/app/(admin)/admin/components/admin-dashboard-layout";
 import {
   Card,
   CardContent,

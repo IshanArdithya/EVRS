@@ -1,6 +1,6 @@
 "use client";
 
-import DashboardLayout from "@/components/dashboard-layout";
+import DashboardLayout from "@/app/(patient)/components/dashboard-layout";
 import NewVaccinationCard from "@/components/new-vaccination-card";
 import {
   Card,
@@ -14,35 +14,24 @@ import { Badge } from "@/components/ui/badge";
 import { Syringe, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CitizenUser, Record } from "@/types";
+import { Record } from "@/types";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 export default function DashboardPage() {
-  const [currentUser, setCurrentUser] = useState<CitizenUser | null>(null);
   const [vaccinations, setVaccinations] = useState<Record[]>([]);
   const router = useRouter();
+  const { citizen, loading } = useUser();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("citizen");
-    if (!storedUser) return router.replace("/login");
-    const { citizenId } = JSON.parse(storedUser);
+    if (!citizen) return;
 
     api
-      .get(`/citizen/vaccinations/${citizenId}`)
+      .get(`/citizen/vaccinations/${citizen.citizenId}`)
       .then((res) => setVaccinations(res.data.records))
       .catch(() => router.replace("/login"));
-
-    if (storedUser) {
-      try {
-        const parsedUser: CitizenUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, [router]);
+  }, [citizen, router]);
 
   const recent = useMemo(() => {
     return [...vaccinations]
@@ -50,13 +39,29 @@ export default function DashboardPage() {
       .slice(0, 3);
   }, [vaccinations]);
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <p>Loading your profile…</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!citizen) {
+    return (
+      <DashboardLayout>
+        <p>Please log in to view your dashboard.</p>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* welcome section */}
         <div className="bg-gradient-to-r from-primary-DEFAULT to-primary-600 rounded-lg p-6 text-white">
           <h1 className="text-2xl font-bold mb-2">
-            Welcome back, {currentUser?.firstName}
+            Welcome back, {citizen.firstName}
           </h1>
           <p className="text-primary-100">
             Your vaccination records are up to date. Stay protected, stay

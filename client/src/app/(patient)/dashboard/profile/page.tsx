@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/dashboard-layout";
+import DashboardLayout from "@/app/(patient)/components/dashboard-layout";
 import {
   Card,
   CardContent,
@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
-import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -47,10 +46,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUser } from "@/context/UserContext";
 
 export default function ProfilePage() {
-  const router = useRouter();
   const { toast } = useToast();
+  const { citizen, loading, refreshProfiles } = useUser();
 
   // --- fields ---
   const [citizenId, setCitizenId] = useState("");
@@ -92,31 +92,41 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
-    api
-      .get("/auth/get/citizen")
-      .then((res) => {
-        const u = res.data.citizen;
-        setCitizenId(u.citizenId);
-        setEmail(u.email || "");
-        setFirstName(u.firstName);
-        setLastName(u.lastName);
-        setPhone(u.phoneNumber || "");
-        setAddress(u.address || "");
-        setBirthDate(u.birthDate);
+    if (!citizen) return;
 
-        if (u.bloodType) setBloodType(u.bloodType);
-        if (u.allergies) setAllergies(u.allergies.join(", "));
-        if (u.medicalConditions)
-          setMedicalConditions(u.medicalConditions.join(", "));
-        if (u.emergencyContact) {
-          setEmContactName(u.emergencyContact.name);
-          setEmContactPhone(u.emergencyContact.phoneNumber);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [router]);
+    setCitizenId(citizen.citizenId);
+    setEmail(citizen.email || "");
+    setFirstName(citizen.firstName);
+    setLastName(citizen.lastName);
+    setPhone(citizen.phoneNumber || "");
+    setAddress(citizen.address || "");
+    setBirthDate(citizen.birthDate);
+
+    if (citizen.bloodType) setBloodType(citizen.bloodType);
+    if (citizen.allergies) setAllergies(citizen.allergies.join(", "));
+    if (citizen.medicalConditions)
+      setMedicalConditions(citizen.medicalConditions.join(", "));
+    if (citizen.emergencyContact) {
+      setEmContactName(citizen.emergencyContact.name);
+      setEmContactPhone(citizen.emergencyContact.phoneNumber);
+    }
+  }, [citizen]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <p>Loading your profile…</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!citizen) {
+    return (
+      <DashboardLayout>
+        <p>Please log in to view your dashboard.</p>
+      </DashboardLayout>
+    );
+  }
 
   const handleEmailChangeRequest = async () => {
     if (!newEmail.trim()) {
@@ -246,6 +256,8 @@ export default function ProfilePage() {
         variant: "destructive",
       });
     }
+
+    await refreshProfiles();
   };
 
   const handleMedicalSubmit = async () => {
@@ -292,6 +304,7 @@ export default function ProfilePage() {
         variant: "destructive",
       });
     }
+    await refreshProfiles();
   };
 
   const handlePasswordChange = async () => {
@@ -541,7 +554,7 @@ export default function ProfilePage() {
                         {email ? "Change Email Address" : "Add Email Address"}
                       </DialogTitle>
                       <DialogDescription>
-                        Enter your new email address. You'll receive a
+                        Enter your new email address. You&apos;ll receive a
                         verification code to confirm the change.
                       </DialogDescription>
                     </DialogHeader>
@@ -604,7 +617,7 @@ export default function ProfilePage() {
                         {phone ? "Change Phone Number" : "Add Phone Number"}
                       </DialogTitle>
                       <DialogDescription>
-                        Enter your new phone number. You'll receive a
+                        Enter your new phone number. You&apos;ll receive a
                         verification code via SMS.
                       </DialogDescription>
                     </DialogHeader>

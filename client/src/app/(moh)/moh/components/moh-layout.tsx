@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, Shield } from "lucide-react";
@@ -18,43 +18,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { healthcareprovidernavigation } from "@/constants/dashboard-layout";
-import { HCPUser } from "@/types";
+import { mohnavigation } from "@/constants/dashboard-layout";
+import { CreateNewbornDialog } from "@/app/(moh)/moh/components/create-newborn-dialog";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
+import { Spinner } from "@/components/ui/spinner";
 
-interface HealthcareProviderLayoutProps {
+interface MOHLayoutProps {
   children: React.ReactNode;
 }
 
-export function HealthcareProviderLayout({
-  children,
-}: HealthcareProviderLayoutProps) {
+export function MOHLayout({ children }: MOHLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { moh, loading } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<HCPUser | null>(null);
+  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("hcp");
-    if (storedUser) {
-      try {
-        const parsedUser: HCPUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!moh) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Please log in to view your dashboard.</p>
+        <Button onClick={() => router.push("/login")}>Go to Login</Button>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
-      const res = await api.post("/auth/logout/hcp");
+      const res = await api.post("/auth/logout/moh");
 
       if (res.status === 200) {
-        localStorage.removeItem("hcp");
-
-        router.replace("/healthcare-provider/login");
+        router.replace("/moh/login");
       } else {
         console.error("Logout failed with status:", res.status);
       }
@@ -65,8 +68,25 @@ export function HealthcareProviderLayout({
 
   const NavItems = () => (
     <>
-      {healthcareprovidernavigation.map((item) => {
+      {mohnavigation.map((item) => {
         const Icon = item.icon;
+
+        if (item.href === "/moh/create-newborn") {
+          return (
+            <button
+              key={item.name}
+              onClick={() => setCreateNewbornOpen(true)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full text-left",
+                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.name}
+            </button>
+          );
+        }
+
         return (
           <Link
             key={item.name}
@@ -95,7 +115,7 @@ export function HealthcareProviderLayout({
           <Shield className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-lg font-semibold">EVRS</h1>
-            <p className="text-xs text-muted-foreground">Healthcare Provider</p>
+            <p className="text-xs text-muted-foreground">Ministry of Health</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-4">
@@ -106,14 +126,12 @@ export function HealthcareProviderLayout({
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder.svg?height=32&width=32" />
               <AvatarFallback>
-                {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+                {moh.name?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">{currentUser?.fullName}</p>
-              <p className="text-xs text-muted-foreground">
-                {currentUser?.email}
-              </p>
+              <p className="font-medium">{moh.name}</p>
+              <p className="text-xs text-muted-foreground">{moh.email}</p>
             </div>
           </div>
         </div>
@@ -138,7 +156,7 @@ export function HealthcareProviderLayout({
                 <div>
                   <h1 className="text-lg font-semibold">EVRS</h1>
                   <p className="text-xs text-muted-foreground">
-                    Healthcare Provider
+                    Ministry of Health
                   </p>
                 </div>
               </div>
@@ -150,14 +168,12 @@ export function HealthcareProviderLayout({
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" />
                     <AvatarFallback>
-                      {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+                      {moh.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">{currentUser?.fullName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentUser?.email}
-                    </p>
+                    <p className="font-medium">{moh.name}</p>
+                    <p className="text-xs text-muted-foreground">{moh.email}</p>
                   </div>
                 </div>
               </div>
@@ -172,9 +188,8 @@ export function HealthcareProviderLayout({
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
-              {healthcareprovidernavigation.find(
-                (item) => item.href === pathname
-              )?.name || "Dashboard"}
+              {mohnavigation.find((item) => item.href === pathname)?.name ||
+                "Dashboard"}
             </h2>
           </div>
           <DropdownMenu>
@@ -183,7 +198,7 @@ export function HealthcareProviderLayout({
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
                   <AvatarFallback>
-                    {currentUser?.fullName?.charAt(0).toUpperCase() || "U"}
+                    {moh.name?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -191,11 +206,9 @@ export function HealthcareProviderLayout({
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {currentUser?.fullName}
-                  </p>
+                  <p className="text-sm font-medium leading-none">{moh.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {currentUser?.email}
+                    {moh.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -216,6 +229,10 @@ export function HealthcareProviderLayout({
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
+      <CreateNewbornDialog
+        open={createNewbornOpen}
+        onOpenChange={setCreateNewbornOpen}
+      />
     </div>
   );
 }

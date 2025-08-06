@@ -3,7 +3,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Baby,
   User,
@@ -35,8 +35,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MOHUser } from "@/types";
 import api from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
+import { useUser } from "@/context/UserContext";
 
 const districts = [
   "Ampara",
@@ -84,30 +85,24 @@ export function CreateNewbornDialog({
     division: "",
     guardianNic: "",
   });
+  const { moh, loading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState<MOHUser | null>(null);
   const [generatedCitizenId, setGeneratedCitizenId] = useState("");
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("moh");
-    if (storedUser) {
-      try {
-        const parsedUser: MOHUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (!moh) {
+    return <p>Please log in to view your dashboard.</p>;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // validate required fields
     if (
       !formData.serialNumber ||
       !formData.firstName ||
@@ -148,8 +143,8 @@ export function CreateNewbornDialog({
         division: formData.division,
         guardianNIC: formData.guardianNic,
         recordedBy: {
-          id: currentUser?.mohId,
-          role: currentUser?.mainRole,
+          id: moh.mohId,
+          role: moh.mainRole,
         },
       });
 

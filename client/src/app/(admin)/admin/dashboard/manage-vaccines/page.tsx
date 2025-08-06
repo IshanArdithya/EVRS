@@ -6,7 +6,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import type React from "react";
 
 import { useState } from "react";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { AdminDashboardLayout } from "@/app/(admin)/admin/components/admin-dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

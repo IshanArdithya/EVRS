@@ -5,7 +5,7 @@
 import type React from "react";
 
 import { useState } from "react";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { AdminDashboardLayout } from "@/app/(admin)/admin/components/admin-dashboard-layout";
 import {
   Card,
   CardContent,

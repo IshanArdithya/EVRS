@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,9 @@ import {
   X,
   Plus,
 } from "lucide-react";
-import { CitizenUser } from "@/types";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -44,29 +45,32 @@ const navigation = [
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CitizenUser | null>(null);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("citizen");
-    if (storedUser) {
-      try {
-        const parsedUser: CitizenUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  const { citizen, loading } = useUser();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!citizen) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Please log in to view your dashboard.</p>
+        <Button onClick={() => router.push("/login")}>Go to Login</Button>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
       const res = await api.post("/auth/logout/citizen");
 
       if (res.status === 200) {
-        localStorage.removeItem("citizen");
-
         router.replace("/login");
       } else {
         console.error("Logout failed with status:", res.status);
@@ -127,8 +131,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-primary text-white">
-                        {currentUser?.firstName?.charAt(0).toUpperCase() || "U"}
-                        {currentUser?.lastName?.charAt(0).toUpperCase() || ""}
+                        {citizen.firstName?.charAt(0).toUpperCase() || "U"}
+                        {citizen.lastName?.charAt(0).toUpperCase() || ""}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -137,10 +141,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
                       <p className="font-medium">
-                        {currentUser?.firstName} {currentUser?.lastName}
+                        {citizen.firstName} {citizen.lastName}
                       </p>
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {currentUser?.citizenId}
+                        {citizen.citizenId}
                       </p>
                     </div>
                   </div>

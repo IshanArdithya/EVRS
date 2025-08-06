@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
-import { HospitalLayout } from "@/components/hospital-layout";
+import { HospitalLayout } from "@/app/(hospital)/hospital/components/hospital-layout";
 import {
   Card,
   CardContent,

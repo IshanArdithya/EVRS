@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -38,7 +37,7 @@ import {
   Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { MOHLayout } from "@/components/moh-layout";
+import { MOHLayout } from "@/app/(moh)/moh/components/moh-layout";
 import api from "@/lib/api";
 import { allVaccines } from "@/types";
 

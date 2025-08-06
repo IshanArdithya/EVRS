@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, Shield } from "lucide-react";
@@ -18,43 +18,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { hospitalnavigation } from "@/constants/dashboard-layout";
-import { HospitalUser } from "@/types";
-import { CreateNewbornDialog } from "@/app/(hospital)/hospital/components/create-newborn-dialog";
+import { healthcareprovidernavigation } from "@/constants/dashboard-layout";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
+import { Spinner } from "@/components/ui/spinner";
 
-interface HospitalLayoutProps {
+interface HealthcareProviderLayoutProps {
   children: React.ReactNode;
 }
 
-export function HospitalLayout({ children }: HospitalLayoutProps) {
+export function HealthcareProviderLayout({
+  children,
+}: HealthcareProviderLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { hcp, loading } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<HospitalUser | null>(null);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("hospital");
-    if (storedUser) {
-      try {
-        const parsedUser: HospitalUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!hcp) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Please log in to view your dashboard.</p>
+        <Button onClick={() => router.push("/login")}>Go to Login</Button>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
-      const res = await api.post("/auth/logout/hospital");
+      const res = await api.post("/auth/logout/hcp");
 
       if (res.status === 200) {
-        localStorage.removeItem("hospital");
-
-        router.replace("/hospital/login");
+        router.replace("/healthcare-provider/login");
       } else {
         console.error("Logout failed with status:", res.status);
       }
@@ -65,25 +68,8 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
 
   const NavItems = () => (
     <>
-      {hospitalnavigation.map((item) => {
+      {healthcareprovidernavigation.map((item) => {
         const Icon = item.icon;
-
-        if (item.href === "/hospital/create-newborn") {
-          return (
-            <button
-              key={item.name}
-              onClick={() => setCreateNewbornOpen(true)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full text-left",
-                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {item.name}
-            </button>
-          );
-        }
-
         return (
           <Link
             key={item.name}
@@ -112,7 +98,7 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
           <Shield className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-lg font-semibold">EVRS</h1>
-            <p className="text-xs text-muted-foreground">Hospital</p>
+            <p className="text-xs text-muted-foreground">Healthcare Provider</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-4">
@@ -123,14 +109,12 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder.svg?height=32&width=32" />
               <AvatarFallback>
-                {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                {hcp.fullName?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">{currentUser?.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {currentUser?.email}
-              </p>
+              <p className="font-medium">{hcp.fullName}</p>
+              <p className="text-xs text-muted-foreground">{hcp.email}</p>
             </div>
           </div>
         </div>
@@ -154,7 +138,9 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
                 <Shield className="h-8 w-8 text-primary" />
                 <div>
                   <h1 className="text-lg font-semibold">EVRS</h1>
-                  <p className="text-xs text-muted-foreground">Hospital</p>
+                  <p className="text-xs text-muted-foreground">
+                    Healthcare Provider
+                  </p>
                 </div>
               </div>
               <nav className="flex-1 space-y-1 p-4">
@@ -165,14 +151,12 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" />
                     <AvatarFallback>
-                      {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                      {hcp.fullName?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">{currentUser?.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentUser?.email}
-                    </p>
+                    <p className="font-medium">{hcp.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{hcp.email}</p>
                   </div>
                 </div>
               </div>
@@ -187,8 +171,9 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
-              {hospitalnavigation.find((item) => item.href === pathname)
-                ?.name || "Dashboard"}
+              {healthcareprovidernavigation.find(
+                (item) => item.href === pathname
+              )?.name || "Dashboard"}
             </h2>
           </div>
           <DropdownMenu>
@@ -197,7 +182,7 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
                   <AvatarFallback>
-                    {currentUser?.name?.charAt(0).toUpperCase() || "U"}
+                    {hcp.fullName?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -206,10 +191,10 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {currentUser?.name}
+                    {hcp.fullName}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {currentUser?.email}
+                    {hcp.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -230,10 +215,6 @@ export function HospitalLayout({ children }: HospitalLayoutProps) {
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
-      <CreateNewbornDialog
-        open={createNewbornOpen}
-        onOpenChange={setCreateNewbornOpen}
-      />
     </div>
   );
 }

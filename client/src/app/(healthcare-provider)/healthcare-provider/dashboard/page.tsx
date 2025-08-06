@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HealthcareProviderLayout } from "@/components/healthcare-provider-layout";
+import { HealthcareProviderLayout } from "@/app/(healthcare-provider)/healthcare-provider/components/healthcare-provider-layout";
 import { hpkeyfeatures, support } from "@/constants/system-information";
 import { healthcareproviderQA } from "@/constants/quick-actions";
 
