@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { HealthcareProviderLayout } from "@/app/(healthcare-provider)/healthcare-provider/components/healthcare-provider-layout";
 import { hpkeyfeatures, support } from "@/constants/system-information";
 import { healthcareproviderQA } from "@/constants/quick-actions";
+import { useUser } from "@/context/UserContext";
 
 const stats = [
   {
@@ -37,6 +38,24 @@ const stats = [
 ];
 
 export default function HealthcareProviderPage() {
+  const { hcp, loading } = useUser();
+
+  if (loading) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Loading your profile…</p>
+      </HealthcareProviderLayout>
+    );
+  }
+
+  if (!hcp) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HealthcareProviderLayout>
+    );
+  }
+
   return (
     <HealthcareProviderLayout>
       <div className="space-y-8">
@@ -51,9 +70,7 @@ export default function HealthcareProviderPage() {
             <h1 className="text-4xl font-bold tracking-tight">
               Welcome to EVRS
             </h1>
-            <p className="text-xl text-muted-foreground mt-2">
-              Healthcare Provider Name
-            </p>
+            <p className="text-xl text-muted-foreground mt-2">{hcp.fullName}</p>
           </div>
           <div className="flex justify-center">
             <Badge variant="secondary" className="text-sm px-3 py-1">

@@ -16,6 +16,7 @@ import { hospitalkeyfeatures, support } from "@/constants/system-information";
 import { hospitalQA } from "@/constants/quick-actions";
 import { useState } from "react";
 import { CreateNewbornDialog } from "../components/create-newborn-dialog";
+import { useUser } from "@/context/UserContext";
 
 const stats = [
   {
@@ -39,7 +40,24 @@ const stats = [
 ];
 
 export default function HospitalPage() {
+  const { hospital, loading } = useUser();
   const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <HospitalLayout>
+        <p>Loading your profile…</p>
+      </HospitalLayout>
+    );
+  }
+
+  if (!hospital) {
+    return (
+      <HospitalLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HospitalLayout>
+    );
+  }
 
   return (
     <HospitalLayout>
@@ -55,7 +73,9 @@ export default function HospitalPage() {
             <h1 className="text-4xl font-bold tracking-tight">
               Welcome to EVRS
             </h1>
-            <p className="text-xl text-muted-foreground mt-2">Hospital Name</p>
+            <p className="text-xl text-muted-foreground mt-2">
+              {hospital.name}
+            </p>
           </div>
           <div className="flex justify-center">
             <Badge variant="secondary" className="text-sm px-3 py-1">

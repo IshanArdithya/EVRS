@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Building2, Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function HospitalLogin() {
   const [credentials, setCredentials] = useState({
@@ -27,6 +28,7 @@ export default function HospitalLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { refreshProfiles } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +47,8 @@ export default function HospitalLogin() {
         hospitalId,
         password,
       });
+
+      await refreshProfiles();
 
       router.replace("/hospital/dashboard");
     } catch (err: any) {

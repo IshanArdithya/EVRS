@@ -16,6 +16,7 @@ import { mohkeyfeatures, support } from "@/constants/system-information";
 import { mohQA } from "@/constants/quick-actions";
 import { CreateNewbornDialog } from "../components/create-newborn-dialog";
 import { useState } from "react";
+import { useUser } from "@/context/UserContext";
 
 const stats = [
   {
@@ -39,7 +40,24 @@ const stats = [
 ];
 
 export default function MOHHome() {
+  const { moh, loading } = useUser();
   const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <MOHLayout>
+        <p>Loading your profile…</p>
+      </MOHLayout>
+    );
+  }
+
+  if (!moh) {
+    return (
+      <MOHLayout>
+        <p>Please log in to view your dashboard.</p>
+      </MOHLayout>
+    );
+  }
 
   return (
     <MOHLayout>
@@ -55,9 +73,7 @@ export default function MOHHome() {
             <h1 className="text-4xl font-bold tracking-tight">
               Welcome to MOH Portal
             </h1>
-            <p className="text-xl text-muted-foreground mt-2">
-              Ministry of Health - Electronic Vaccination Record System
-            </p>
+            <p className="text-xl text-muted-foreground mt-2">{moh.name}</p>
           </div>
           <div className="flex justify-center">
             <Badge variant="secondary" className="text-sm px-3 py-1">

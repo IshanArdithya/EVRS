@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function AdminLogin() {
   const [credentials, setCredentials] = useState({
@@ -27,6 +28,7 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { refreshProfiles } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,8 @@ export default function AdminLogin() {
 
     try {
       await api.post("/auth/login/admin", { adminId, password });
+
+      await refreshProfiles();
 
       router.replace("/admin/dashboard");
     } catch (err: any) {
