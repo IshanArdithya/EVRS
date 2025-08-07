@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import MOH from "../models/mohModel.js";
+import MOH from "../../models/mohModel.js";
 
 function generateMohId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);

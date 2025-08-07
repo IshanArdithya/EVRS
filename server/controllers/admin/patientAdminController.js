@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import Patient from "../models/patientModel.js";
+import Patient from "../../models/patientModel.js";
 
 function generateCitizenId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);

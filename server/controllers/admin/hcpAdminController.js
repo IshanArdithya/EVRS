@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import HealthcareProvider from "../models/hcpModel.js";
+import HealthcareProvider from "../../models/hcpModel.js";
 
 function generateHcpId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);

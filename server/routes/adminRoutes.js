@@ -5,28 +5,28 @@ import {
   getPatientByCitizenId,
   updatePatientByCitizenId,
   deletePatientByCitizenId,
-} from "../controllers/patientAdminController.js";
+} from "../controllers/admin/patientAdminController.js";
 import {
   registerHospital,
   getAllHospitals,
   getHospitalById,
   updateHospitalById,
   deleteHospitalById,
-} from "../controllers/hospitalAdminController.js";
+} from "../controllers/admin/hospitalAdminController.js";
 import {
   registerMOH,
   getAllMOHs,
   getMOHById,
   updateMOHById,
   deleteMOHById,
-} from "../controllers/mohAdminController.js";
+} from "../controllers/admin/mohAdminController.js";
 import {
   registerHCP,
   getAllHCPs,
   getHCPById,
   updateHCPById,
   deleteHCPById,
-} from "../controllers/hcpAdminController.js";
+} from "../controllers/admin/hcpAdminController.js";
 import {
   addVaccination,
   getAllVaccinations,
@@ -34,14 +34,14 @@ import {
   getVaccinationById,
   updateVaccinationById,
   deleteVaccinationById,
-} from "../controllers/vaccinationAdminController.js";
+} from "../controllers/admin/vaccinationAdminController.js";
 import {
   registerVaccine,
   getAllVaccines,
   getVaccineById,
   updateVaccineById,
   deleteVaccineById,
-} from "../controllers/vaccineAdminController.js";
+} from "../controllers/admin/vaccineAdminController.js";
 import {
   changePassword,
   getAdminProfile,

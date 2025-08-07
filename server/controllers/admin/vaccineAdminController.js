@@ -1,4 +1,4 @@
-import Vaccine from "../models/vaccineModel.js";
+import Vaccine from "../../models/vaccineModel.js";
 
 function generateVaccineId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);

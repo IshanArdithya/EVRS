@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import Hospital from "../models/hospitalModel.js";
+import Hospital from "../../models/hospitalModel.js";
 
 function generateHospitalId() {
   const digits = Math.floor(1000000000 + Math.random() * 9000000000);
