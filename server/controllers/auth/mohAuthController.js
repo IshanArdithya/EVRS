@@ -63,36 +63,3 @@ export const logoutMOH = (req, res) => {
   });
   res.status(200).json({ message: "Logged out successfully" });
 };
-
-export const getMOHProfile = async (req, res) => {
-  const token = req.cookies.moh_token;
-
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const { mohId } = payload;
-
-    const moh = await MOH.findOne({ mohId })
-      .select("-password -pendingEmail -pendingPhone -__v")
-      .lean();
-
-    if (!moh) {
-      return res.status(404).json({ message: "MOH not found" });
-    }
-
-    res.status(200).json({
-      loggedIn: true,
-      moh: {
-        mohId: moh.mohId,
-        name: moh.name,
-        email: moh.email,
-        phoneNumber: moh.phoneNumber,
-        province: moh.province,
-        district: moh.district,
-      },
-    });
-  } catch (error) {
-    res.status(403).json({ message: "Invalid token" });
-  }
-};

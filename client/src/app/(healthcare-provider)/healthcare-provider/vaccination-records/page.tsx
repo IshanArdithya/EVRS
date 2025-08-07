@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
-
+import { useState, useEffect, useRef } from "react";
+import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
+import { HealthcareProviderLayout } from "@/app/(healthcare-provider)/healthcare-provider/components/healthcare-provider-layout";
 import {
   Card,
   CardContent,
@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Search,
   Plus,
@@ -47,17 +48,38 @@ import {
   Calendar,
   MapPin,
   Hash,
-  FileUser,
+  FileIcon as FileUser,
+  QrCode,
+  X,
+  Camera,
+  CameraOff,
+  RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { HealthcareProviderLayout } from "@/components/healthcare-provider-layout";
 import api from "@/lib/api";
 import { format } from "date-fns";
-import { HCPUser, Vaccine } from "@/types";
+import type { Vaccine } from "@/types";
+import { useUser } from "@/context/UserContext";
+
+interface VaccinationRecord {
+  vaccinationType: string;
+  vaccineName: string;
+  createdAt: string;
+  batchNumber: string;
+  vaccinationLocation: string;
+  division: string;
+  additionalNotes: string;
+}
+
+interface CitizenData {
+  name: string;
+  birthDate: string;
+  vaccinations: VaccinationRecord[];
+}
 
 export default function HealthcareProviderDashboard() {
   const [citizenId, setCitizenId] = useState("");
-  const [citizenData, setCitizenData] = useState<any>(null);
+  const [citizenData, setCitizenData] = useState<CitizenData | null>(null);
   const [vaccines, setVaccines] = useState<Vaccine[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -74,15 +96,25 @@ export default function HealthcareProviderDashboard() {
   });
 
   const { toast } = useToast();
+  const { hcp, loading } = useUser();
 
   const [generatedVaccinationId, setGeneratedVaccinationId] = useState("");
   const [citizenError, setCitizenError] = useState("");
-  const [currentUser, setCurrentUser] = useState<HCPUser | null>(null);
 
   const selectedVac = vaccines.find(
     (v) => v.vaccineId === formData.vaccinationType
   );
   const vacName = selectedVac?.name || formData.vaccinationType;
+
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
+  const [cameras, setCameras] = useState<{ id: string; label?: string }[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<string>("");
+  const [scannerError, setScannerError] = useState<string>("");
+  const [cameraPermission, setCameraPermission] = useState<string>("prompt");
+  const [isInitializingCamera, setIsInitializingCamera] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const scannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isAddDialogOpen) return;
@@ -93,33 +125,76 @@ export default function HealthcareProviderDashboard() {
   }, [isAddDialogOpen]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("hcp");
-    if (storedUser) {
-      try {
-        const parsedUser: HCPUser = JSON.parse(storedUser);
-        setCurrentUser(parsedUser);
-      } catch (err) {
-        console.error("Failed to parse user from localStorage:", err);
-        setCurrentUser(null);
+    if (!showScanner || !scannerRef.current) return;
+
+    let html5Qr: Html5Qrcode;
+    const initScanner = async () => {
+      const cams = await Html5Qrcode.getCameras();
+      const camId = cams[0].id;
+      html5Qr = new Html5Qrcode(scannerRef.current!.id);
+      setScanner(html5Qr);
+      await html5Qr.start(
+        camId,
+        { fps: 10, qrbox: 250 },
+        (decoded) => {
+          setCitizenId(decoded);
+          html5Qr.stop().then(() => html5Qr.clear());
+          setShowScanner(false);
+        },
+        (err) => console.warn(err)
+      );
+    };
+
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) {
+        ro.disconnect();
+        initScanner();
       }
-    }
-  }, []);
+    });
+    ro.observe(scannerRef.current);
 
-  const handleSearchCitizen = async () => {
-    if (!citizenId.trim()) {
-      toast({
-        title: "Citizen ID Required",
-        description: "Please enter a citizen account ID",
-        variant: "destructive",
-      });
-      return;
-    }
+    return () => {
+      ro.disconnect();
+      scanner?.stop().catch(() => {});
+    };
+  }, [showScanner]);
 
+  if (loading) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Loading your profile…</p>
+      </HealthcareProviderLayout>
+    );
+  }
+
+  if (!hcp) {
+    return (
+      <HealthcareProviderLayout>
+        <p>Please log in to view your dashboard.</p>
+      </HealthcareProviderLayout>
+    );
+  }
+
+  const startQRScanner = () => {
+    setShowScanner(true);
+  };
+
+  const stopQRScanner = () => {
+    if (scanner) {
+      scanner
+        .stop()
+        .then(() => scanner.clear())
+        .catch(console.error);
+    }
+    setShowScanner(false);
+  };
+
+  const searchCitizenById = async (id: string) => {
     setIsSearching(true);
 
     try {
-      const response = await api.get(`/shared/vaccinations/${citizenId}`);
-
+      const response = await api.get(`/hcp/vaccinations/${id}`);
       const { patient, records } = response.data;
 
       setCitizenData({
@@ -144,6 +219,19 @@ export default function HealthcareProviderDashboard() {
     }
   };
 
+  const handleSearchCitizen = async () => {
+    if (!citizenId.trim()) {
+      toast({
+        title: "Citizen ID Required",
+        description: "Please enter a citizen account ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await searchCitizenById(citizenId);
+  };
+
   const validateCitizen = async (citizenId: string): Promise<boolean> => {
     try {
       await api.get<unknown>(`/admin/patient/${citizenId}`);
@@ -161,7 +249,7 @@ export default function HealthcareProviderDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUser || !currentUser.hcpId) {
+    if (!hcp.hcpId) {
       toast({
         title: "Missing Healthcare Provider ID",
         description: "Re-login required. Your session may have expired.",
@@ -186,14 +274,14 @@ export default function HealthcareProviderDashboard() {
         vaccineId: formData.vaccinationType,
         batchNumber: formData.batchNumber,
         expiryDate: formData.expiryDate,
-        recordedById: currentUser.hcpId,
-        recordedByRole: currentUser.mainRole,
+        recordedById: hcp.hcpId,
+        recordedByRole: hcp.mainRole,
         vaccinationLocation: formData.vaccinationLocation,
         division: formData.division,
         additionalNotes: formData.notes || "",
       };
 
-      const { data } = await api.post("/shared/add-vaccination", payload);
+      const { data } = await api.post("/hcp/add-vaccination", payload);
 
       setGeneratedVaccinationId(data.record.vaccinationId);
       setIsAddDialogOpen(false);
@@ -243,6 +331,18 @@ export default function HealthcareProviderDashboard() {
     );
   };
 
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      return format(date, "yyyy/MM/dd");
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   return (
     <HealthcareProviderLayout>
       <div className="space-y-6">
@@ -264,40 +364,230 @@ export default function HealthcareProviderDashboard() {
               Search Citizen
             </CardTitle>
             <CardDescription>
-              Enter a citizen account ID to view their vaccination records
+              Enter a citizen account ID or scan a QR code to view vaccination
+              records
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="citizenId">Citizen Account ID</Label>
-                <Input
-                  id="citizenId"
-                  value={citizenId}
-                  onChange={(e) => setCitizenId(e.target.value)}
-                  placeholder="e.g., C6660830450"
-                  className="mt-1"
-                />
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="citizenId">Citizen Account ID</Label>
+                  <Input
+                    id="citizenId"
+                    value={citizenId}
+                    onChange={(e) => setCitizenId(e.target.value)}
+                    placeholder="e.g., C6660830450"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button
+                    onClick={handleSearchCitizen}
+                    disabled={isSearching || isScanning || isInitializingCamera}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {isSearching ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4" />
+                        Search
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={isScanning ? stopQRScanner : startQRScanner}
+                    variant={isScanning ? "destructive" : "outline"}
+                    disabled={isSearching}
+                  >
+                    {isScanning ? (
+                      <>
+                        <CameraOff className="mr-2 h-4 w-4" />
+                        Stop Scan
+                      </>
+                    ) : (
+                      <>
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Scan QR
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-end">
-                <Button
-                  onClick={handleSearchCitizen}
-                  disabled={isSearching}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      Search
-                    </>
-                  )}
-                </Button>
-              </div>
+
+              {/* camera perm alert */}
+              {cameraPermission === "denied" && (
+                <Alert variant="destructive">
+                  <CameraOff className="h-4 w-4" />
+                  <AlertDescription>
+                    Camera access is blocked. Please enable camera permissions
+                    in your browser settings and refresh the page.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* qr scanner */}
+              {showScanner && (
+                <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          {isScanning && (
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          )}
+                          <Camera className="w-5 h-5 text-primary" />
+                          <CardTitle className="text-primary">
+                            {isInitializingCamera
+                              ? "Initializing Camera..."
+                              : isScanning
+                              ? "Camera Active - QR Scanner"
+                              : "QR Scanner"}
+                          </CardTitle>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={stopQRScanner}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Position the QR code within the camera frame to scan
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* camera selection */}
+                      {cameras.length > 1 && isScanning && (
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor="camera-select"
+                            className="text-sm font-medium"
+                          >
+                            Camera:
+                          </Label>
+                          <Select
+                            value={selectedCamera}
+                            onValueChange={setSelectedCamera}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Select camera" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cameras.map((camera) => (
+                                <SelectItem key={camera.id} value={camera.id}>
+                                  {camera.label || `Camera ${camera.id}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="outline" size="sm">
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* scanner container */}
+                      <div className="relative">
+                        <div
+                          ref={scannerRef}
+                          id="qr-reader"
+                          className="mx-auto rounded-lg overflow-hidden"
+                          style={{
+                            width: "100%",
+                            height: "320px",
+                          }}
+                        />
+
+                        {scannerError && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                            <div className="text-center space-y-3 p-4">
+                              <CameraOff className="w-12 h-12 text-gray-400 mx-auto" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">
+                                  Camera Error
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {scannerError}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={restartScanner}
+                                >
+                                  <RotateCcw className="w-4 h-4 mr-2" />
+                                  Retry
+                                </Button>
+                                {cameraPermission === "denied" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={requestCameraPermission}
+                                  >
+                                    <Camera className="w-4 h-4 mr-2" />
+                                    Enable Camera
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {isInitializingCamera && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
+                            <div className="text-center space-y-3 p-4">
+                              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">
+                                  Initializing Camera
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Please wait while we start the camera...
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* scanner instructs */}
+                      {isScanning && (
+                        <div className="text-center space-y-2">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <p className="text-sm text-gray-600 font-medium">
+                              Scanner Active - Hold QR code steady within the
+                              frame
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Make sure the QR code is well-lit and clearly
+                            visible
+                          </p>
+                        </div>
+                      )}
+
+                      <Alert>
+                        <QrCode className="h-4 w-4" />
+                        <AlertDescription>
+                          Only vaccination request QR codes will be accepted.
+                          Other QR codes will be rejected for security reasons.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -332,7 +622,7 @@ export default function HealthcareProviderDashboard() {
                 <div>
                   <Label className="text-sm font-medium">Birth Date</Label>
                   <p className="text-sm text-gray-600">
-                    {format(new Date(citizenData.birthDate), "yyyy/MM/dd")}
+                    {formatDate(citizenData.birthDate)}
                   </p>
                 </div>
               </div>
@@ -389,7 +679,7 @@ export default function HealthcareProviderDashboard() {
                     </TableHeader>
                     <TableBody>
                       {citizenData.vaccinations.map(
-                        (vaccination: any, i: any) => (
+                        (vaccination: VaccinationRecord, i: number) => (
                           <TableRow key={i}>
                             <TableCell>
                               <Badge
@@ -403,10 +693,7 @@ export default function HealthcareProviderDashboard() {
                             <TableCell>
                               <div className="flex items-center">
                                 <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                                {format(
-                                  new Date(vaccination.createdAt),
-                                  "yyyy/MM/dd"
-                                )}
+                                {formatDate(vaccination.createdAt)}
                               </div>
                             </TableCell>
                             <TableCell>

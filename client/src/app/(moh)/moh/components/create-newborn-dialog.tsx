@@ -134,7 +134,7 @@ export function CreateNewbornDialog({
     setIsSubmitting(true);
 
     try {
-      const response = await api.post("/shared/register-patient", {
+      const response = await api.post("/moh/register-patient", {
         serialNumber: formData.serialNumber,
         firstName: formData.firstName,
         lastName: formData.lastName,

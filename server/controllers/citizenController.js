@@ -9,7 +9,7 @@ import Hospital from "../models/hospitalModel.js";
 import MOH from "../models/mohModel.js";
 
 export const getCitizenVaccinations = async (req, res) => {
-  const { citizenId } = req.params;
+  const citizenId = req.user.citizenId;
   const { limit } = req.query;
 
   try {
@@ -394,3 +394,44 @@ export async function changePassword(req, res) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export const getCitizenProfile = async (req, res) => {
+  const { citizenId } = req.user;
+
+  try {
+    const citizen = await Patient.findOne({ citizenId })
+      .select("-password -pendingEmail -pendingPhone -__v")
+      .lean();
+
+    if (!citizen) {
+      return res.status(404).json({ message: "Citizen not found" });
+    }
+
+    const formattedBirthDate = citizen.birthDate
+      ? citizen.birthDate.toISOString().split("T")[0]
+      : null;
+
+    return res.status(200).json({
+      loggedIn: true,
+      citizen: {
+        citizenId: citizen.citizenId,
+        firstName: citizen.firstName,
+        lastName: citizen.lastName,
+        email: citizen.email || null,
+        phoneNumber: citizen.phoneNumber || null,
+        address: citizen.address || null,
+        birthDate: formattedBirthDate,
+        bloodType: citizen.bloodType,
+        allergies: citizen.allergies,
+        medicalConditions: citizen.medicalConditions,
+        emergencyContact: {
+          name: citizen.emergencyContact?.name,
+          phoneNumber: citizen.emergencyContact?.phoneNumber,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("getCitizenProfile error:", err);
+    return res.status(403).json({ message: "Invalid or expired token." });
+  }
+};

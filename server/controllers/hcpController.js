@@ -198,3 +198,85 @@ export async function changePassword(req, res) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export const addVaccination = async (req, res) => {
+  const {
+    citizenId,
+    vaccineId,
+    batchNumber,
+    expiryDate,
+    vaccinationLocation,
+    division,
+    additionalNotes,
+  } = req.body;
+  const { hcpId, role } = req.user;
+
+  if (
+    !citizenId ||
+    !vaccineId ||
+    !batchNumber ||
+    !expiryDate ||
+    !hcpId ||
+    !role ||
+    !vaccinationLocation ||
+    !division
+  ) {
+    return res.status(400).json({
+      message: "All fields except additionalNotes are required",
+    });
+  }
+
+  try {
+    const newRecord = await VaccinationRecord.create({
+      vaccinationId: generateVaccinationId(),
+      citizenId,
+      vaccineId,
+      batchNumber,
+      expiryDate,
+      recordedBy: {
+        id: hcpId,
+        role: role,
+      },
+      vaccinationLocation,
+      division,
+      additionalNotes: additionalNotes || "",
+    });
+
+    res.status(201).json({
+      message: "Vaccination record created successfully",
+      record: newRecord,
+    });
+  } catch (error) {
+    console.error("Add vaccination error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getHCPProfile = async (req, res) => {
+  const { hcpId } = req.user;
+
+  try {
+    const hcp = await HealthcareProvider.findOne({ hcpId })
+      .select("-password -pendingEmail -pendingPhone -__v")
+      .lean();
+
+    if (!hcp) {
+      return res.status(404).json({ message: "Healthcare Provider not found" });
+    }
+
+    res.status(200).json({
+      loggedIn: true,
+      hcp: {
+        hcpId: hcp.hcpId,
+        fullName: hcp.fullName,
+        email: hcp.email,
+        phoneNumber: hcp.phoneNumber,
+        role: hcp.role,
+        nic: hcp.nic,
+      },
+    });
+  } catch (error) {
+    console.error("getHcpProfile error:", err);
+    res.status(403).json({ message: "Invalid or expired token." });
+  }
+};

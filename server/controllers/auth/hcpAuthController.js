@@ -61,37 +61,3 @@ export const logoutHCP = (req, res) => {
   });
   res.status(200).json({ message: "Logged out successfully" });
 };
-
-export const getHCPProfile = async (req, res) => {
-  const token = req.cookies.hcp_token;
-
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const { hcpId } = payload;
-
-    const hcp = await HCP.findOne({ hcpId })
-      .select("-password -pendingEmail -pendingPhone -__v")
-      .lean();
-
-    if (!hcp) {
-      return res.status(404).json({ message: "Healthcare Provider not found" });
-    }
-
-    res.status(200).json({
-      loggedIn: true,
-      hcp: {
-        hcpId: hcp.hcpId,
-        fullName: hcp.fullName,
-        email: hcp.email,
-        phoneNumber: hcp.phoneNumber,
-        role: hcp.role,
-        nic: hcp.nic,
-      },
-    });
-  } catch (error) {
-    console.error("getHcpProfile error:", err);
-    res.status(403).json({ message: "Invalid or expired token." });
-  }
-};

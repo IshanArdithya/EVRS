@@ -72,7 +72,7 @@ export default function ViewVaccines() {
         params.search = searchQuery.trim();
       }
 
-      const response = await api.get("/shared/vaccines", { params });
+      const response = await api.get("/moh/vaccines", { params });
       setVaccines(response.data);
       setHasAppliedFilter(true);
     } catch (err) {

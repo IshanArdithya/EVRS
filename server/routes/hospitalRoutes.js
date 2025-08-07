@@ -3,14 +3,29 @@ import {
   requestPhoneChange,
   verifyPhoneChange,
   changePassword,
+  addVaccination,
+  registerPatient,
+  getHospitalProfile,
 } from "../controllers/hospitalController.js";
-import { authenticateHospital } from "../middleware/authenticateHospital.js";
+import { authenticateRole, authorize } from "../middleware/auth.js";
+import {
+  getAllVaccines,
+  getVaccinationsByCitizenId,
+} from "../controllers/sharedController.js";
 
 const router = express.Router();
 
-router.post("/profile/phone/request", authenticateHospital, requestPhoneChange);
-router.post("/profile/phone/verify", authenticateHospital, verifyPhoneChange);
+router.use(authenticateRole("hospital"), authorize("hospital"));
 
-router.put("/profile/password", authenticateHospital, changePassword);
+router.get("/vaccines", getAllVaccines);
+router.get("/vaccinations/:citizenId", getVaccinationsByCitizenId);
+router.post("/add-vaccination", addVaccination);
+router.post("/register-patient", registerPatient);
+
+router.get("/get/profile", getHospitalProfile);
+router.post("/profile/phone/request", requestPhoneChange);
+router.post("/profile/phone/verify", verifyPhoneChange);
+
+router.put("/profile/password", changePassword);
 
 export default router;

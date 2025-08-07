@@ -61,26 +61,3 @@ export const logoutAdmin = (req, res) => {
   });
   res.status(200).json({ message: "Logged out successfully" });
 };
-
-export const getAdminProfile = async (req, res) => {
-  const token = req.cookies.admin_token;
-
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const { adminId } = payload;
-
-    const admin = await Admin.findOne({ adminId })
-      .select("-password -__v")
-      .lean();
-    res
-      .status(200)
-      .json({
-        loggedIn: true,
-        admin: { adminId: admin.adminId, email: admin.email },
-      });
-  } catch (error) {
-    res.status(403).json({ message: "Invalid token" });
-  }
-};

@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticateCitizen } from "../middleware/authenticateCitizen.js";
+import { authenticateRole, authorize } from "../middleware/auth.js";
 import {
   getCitizenVaccinations,
   updateCitizenProfile,
@@ -9,23 +9,27 @@ import {
   verifyPhoneChange,
   updateMedicalInfo,
   changePassword,
+  getCitizenProfile,
 } from "../controllers/citizenController.js";
 
 const router = express.Router();
 
-router.get("/vaccinations/:citizenId", getCitizenVaccinations);
-router.put("/profile", authenticateCitizen, updateCitizenProfile);
+router.use(authenticateRole("citizen"), authorize("citizen"));
+
+router.get("/vaccinations/citizenId", getCitizenVaccinations);
+router.get("/get/profile", getCitizenProfile);
+router.put("/profile", updateCitizenProfile);
 
 // email otp req and verify
-router.post("/profile/email/request", authenticateCitizen, requestEmailChange);
-router.post("/profile/email/verify", authenticateCitizen, verifyEmailChange);
+router.post("/profile/email/request", requestEmailChange);
+router.post("/profile/email/verify", verifyEmailChange);
 
 // phone otp req and verify
-router.post("/profile/phone/request", authenticateCitizen, requestPhoneChange);
-router.post("/profile/phone/verify", authenticateCitizen, verifyPhoneChange);
+router.post("/profile/phone/request", requestPhoneChange);
+router.post("/profile/phone/verify", verifyPhoneChange);
 
-router.put("/profile/medical", authenticateCitizen, updateMedicalInfo);
+router.put("/profile/medical", updateMedicalInfo);
 
-router.put("/profile/password", authenticateCitizen, changePassword);
+router.put("/profile/password", changePassword);
 
 export default router;

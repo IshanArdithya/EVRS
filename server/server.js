@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-import sharedRoutes from "./routes/sharedRoutes.js";
 import citizenRoutes from "./routes/citizenRoutes.js";
 import hcpRoutes from "./routes/hcpRoutes.js";
 import hospitalRoutes from "./routes/hospitalRoutes.js";
@@ -31,7 +30,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/shared", sharedRoutes);
 app.use("/api/citizen", citizenRoutes);
 app.use("/api/hcp", hcpRoutes);
 app.use("/api/hospital", hospitalRoutes);

@@ -20,7 +20,7 @@ export default function VaccinationsPage() {
   useEffect(() => {
     if (!citizen?.citizenId) return;
     api
-      .get(`/citizen/vaccinations/${citizen?.citizenId}`)
+      .get(`/citizen/vaccinations/citizenId`)
       .then((res) => setVaccinations(res.data.records))
       .catch(() => router.replace("/login"));
   }, [citizen?.citizenId, router]);

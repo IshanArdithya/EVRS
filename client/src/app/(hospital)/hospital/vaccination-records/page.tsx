@@ -121,7 +121,7 @@ export default function HospitalDashboard() {
     setIsSearching(true);
 
     try {
-      const response = await api.get(`/shared/vaccinations/${citizenId}`);
+      const response = await api.get(`/hospital/vaccinations/${citizenId}`);
 
       const { patient, records } = response.data;
 
@@ -197,7 +197,7 @@ export default function HospitalDashboard() {
         additionalNotes: formData.notes || "",
       };
 
-      const { data } = await api.post("/shared/add-vaccination", payload);
+      const { data } = await api.post("/hospital/add-vaccination", payload);
 
       setGeneratedVaccinationId(data.record.vaccinationId);
       setIsAddDialogOpen(false);

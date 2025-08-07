@@ -5,17 +5,30 @@ import {
   requestPhoneChange,
   verifyPhoneChange,
   changePassword,
+  addVaccination,
+  getHCPProfile,
 } from "../controllers/hcpController.js";
-import { authenticateHCP } from "../middleware/authenticateHCP.js";
+import { authenticateRole, authorize } from "../middleware/auth.js";
+import {
+  getAllVaccines,
+  getVaccinationsByCitizenId,
+} from "../controllers/sharedController.js";
 
 const router = express.Router();
 
-router.post("/profile/email/request", authenticateHCP, requestEmailChange);
-router.post("/profile/email/verify", authenticateHCP, verifyEmailChange);
+router.use(authenticateRole("hcp"), authorize("hcp"));
 
-router.post("/profile/phone/request", authenticateHCP, requestPhoneChange);
-router.post("/profile/phone/verify", authenticateHCP, verifyPhoneChange);
+router.get("/vaccines", getAllVaccines);
+router.get("/vaccinations/:citizenId", getVaccinationsByCitizenId);
+router.post("/add-vaccination", addVaccination);
 
-router.put("/profile/password", authenticateHCP, changePassword);
+router.get("/get/profile", getHCPProfile);
+router.post("/profile/email/request", requestEmailChange);
+router.post("/profile/email/verify", verifyEmailChange);
+
+router.post("/profile/phone/request", requestPhoneChange);
+router.post("/profile/phone/verify", verifyPhoneChange);
+
+router.put("/profile/password", changePassword);
 
 export default router;

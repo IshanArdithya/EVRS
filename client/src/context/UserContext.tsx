@@ -18,7 +18,6 @@ import type {
   AdminUser,
 } from "@/types";
 
-// Define which user roles this provider should load
 export type UserRole = "citizen" | "hcp" | "hospital" | "moh" | "admin";
 
 interface UserContextType {
@@ -28,7 +27,7 @@ interface UserContextType {
   moh: MOHUser | null;
   admin: AdminUser | null;
   loading: boolean;
-  // Call to re-fetch only the roles provided
+
   refreshProfiles: () => Promise<void>;
 }
 
@@ -36,7 +35,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 interface UserProviderProps {
   children: ReactNode;
-  roles: UserRole[]; // e.g. ["hcp"] for healthcare-provider portal
+  roles: UserRole[];
 }
 
 export function UserProvider({ children, roles }: UserProviderProps) {
@@ -47,17 +46,15 @@ export function UserProvider({ children, roles }: UserProviderProps) {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Utility arrays for mapping
   const endpoints: Record<UserRole, string> = {
-    citizen: "/auth/get/citizen",
-    hcp: "/auth/get/hcp",
-    hospital: "/auth/get/hospital",
-    moh: "/auth/get/moh",
-    admin: "/auth/get/admin",
+    citizen: "/citizen/get/profile",
+    hcp: "/hcp/get/profile",
+    hospital: "/hospital/get/profile",
+    moh: "/moh/get/profile",
+    admin: "/admin/get/profile",
   };
 
-  // Re-fetch only for provided roles
-
+  // refetch provided roles
   const refreshProfiles = useCallback(async () => {
     setLoading(true);
 
@@ -85,7 +82,6 @@ export function UserProvider({ children, roles }: UserProviderProps) {
               break;
           }
         } catch {
-          // On error, clear that role
           switch (role) {
             case "citizen":
               setCitizen(null);

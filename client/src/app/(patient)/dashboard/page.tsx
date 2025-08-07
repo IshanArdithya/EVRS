@@ -28,7 +28,7 @@ export default function DashboardPage() {
     if (!citizen) return;
 
     api
-      .get(`/citizen/vaccinations/${citizen.citizenId}`)
+      .get(`/citizen/vaccinations/citizenId`)
       .then((res) => setVaccinations(res.data.records))
       .catch(() => router.replace("/login"));
   }, [citizen, router]);

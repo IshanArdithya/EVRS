@@ -121,3 +121,154 @@ export async function changePassword(req, res) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export const addVaccination = async (req, res) => {
+  const {
+    citizenId,
+    vaccineId,
+    batchNumber,
+    expiryDate,
+    vaccinationLocation,
+    division,
+    additionalNotes,
+  } = req.body;
+  const { adminId, role } = req.user;
+
+  if (
+    !citizenId ||
+    !vaccineId ||
+    !batchNumber ||
+    !expiryDate ||
+    !adminId ||
+    !role ||
+    !vaccinationLocation ||
+    !division
+  ) {
+    return res.status(400).json({
+      message: "All fields except additionalNotes are required",
+    });
+  }
+
+  try {
+    const newRecord = await VaccinationRecord.create({
+      vaccinationId: generateVaccinationId(),
+      citizenId,
+      vaccineId,
+      batchNumber,
+      expiryDate,
+      recordedBy: {
+        id: adminId,
+        role: role,
+      },
+      vaccinationLocation,
+      division,
+      additionalNotes: additionalNotes || "",
+    });
+
+    res.status(201).json({
+      message: "Vaccination record created successfully",
+      record: newRecord,
+    });
+  } catch (error) {
+    console.error("Add vaccination error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const registerPatient = async (req, res) => {
+  const {
+    serialNumber,
+    firstName,
+    lastName,
+    birthDate,
+    district,
+    division,
+    guardianNIC,
+  } = req.body;
+  const { mohId, role } = req.user;
+
+  try {
+    if (
+      !serialNumber ||
+      !firstName ||
+      !lastName ||
+      !birthDate ||
+      !district ||
+      !division ||
+      !guardianNIC ||
+      !mohId ||
+      !role
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const existing = await Patient.findOne({ serialNumber });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ message: "Patient with this serial number already exists" });
+    }
+
+    const rawPassword = generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    const newPatient = await Patient.create({
+      citizenId: generateCitizenId(),
+      serialNumber,
+      firstName,
+      lastName,
+      birthDate,
+      district,
+      division,
+      guardianNIC,
+      password: hashedPassword,
+      recordedBy: {
+        id: mohId,
+        role: role,
+      },
+    });
+
+    res.status(201).json({
+      message: "Patient registered successfully",
+      patient: {
+        id: newPatient._id,
+        citizenId: newPatient.citizenId,
+        firstName: newPatient.firstName,
+        lastName: newPatient.lastName,
+        email: newPatient.email,
+        password: rawPassword,
+      },
+    });
+  } catch (error) {
+    console.error("Register patient error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getMOHProfile = async (req, res) => {
+  const { mohId } = req.user;
+
+  try {
+    const moh = await MOH.findOne({ mohId })
+      .select("-password -pendingEmail -pendingPhone -__v")
+      .lean();
+
+    if (!moh) {
+      return res.status(404).json({ message: "MOH not found" });
+    }
+
+    res.status(200).json({
+      loggedIn: true,
+      moh: {
+        mohId: moh.mohId,
+        name: moh.name,
+        email: moh.email,
+        phoneNumber: moh.phoneNumber,
+        province: moh.province,
+        district: moh.district,
+      },
+    });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
+  }
+};

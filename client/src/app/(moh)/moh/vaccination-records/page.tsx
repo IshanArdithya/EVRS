@@ -121,7 +121,7 @@ export default function MOHDashboard() {
     setIsSearching(true);
 
     try {
-      const response = await api.get(`/shared/vaccinations/${citizenId}`);
+      const response = await api.get(`/moh/vaccinations/${citizenId}`);
 
       const { patient, records } = response.data;
 
@@ -197,7 +197,7 @@ export default function MOHDashboard() {
         additionalNotes: formData.notes || "",
       };
 
-      const { data } = await api.post("/shared/add-vaccination", payload);
+      const { data } = await api.post("/moh/add-vaccination", payload);
 
       setGeneratedVaccinationId(data.record.vaccinationId);
       setIsAddDialogOpen(false);

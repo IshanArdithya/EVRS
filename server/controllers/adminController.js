@@ -115,3 +115,19 @@ export async function changePassword(req, res) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+export const getAdminProfile = async (req, res) => {
+  const { adminId } = req.user;
+
+  try {
+    const admin = await Admin.findOne({ adminId })
+      .select("-password -__v")
+      .lean();
+    res.status(200).json({
+      loggedIn: true,
+      admin: { adminId: admin.adminId, email: admin.email },
+    });
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
+  }
+};
