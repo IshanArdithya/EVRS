@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { transporter } from "../utils/mailer.js";
-import { twilioClient } from "../config/twilio.js";
+import { sendMail } from "../services/mailer.js";
+import { sendWhatsAppOTP } from "../services/twilio.js";
 import HealthcareProvider from "../models/hcpModel.js";
 
 // ----- Profile Settings Section -----
@@ -31,8 +31,7 @@ export const requestEmailChange = async (req, res) => {
       }
     );
 
-    await transporter.sendMail({
-      from: `"EVRS Support" <no-reply@evrs.gov>`,
+    await sendMail({
       to: newEmail,
       subject: "Your EVRS Email Verification Code",
       text: `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.`,
@@ -110,15 +109,11 @@ export const requestPhoneChange = async (req, res) => {
   }
 
   try {
-    await twilioClient.messages.create({
-      body: `Your EVRS verification code is ${code}. It expires in 15 minutes.`,
-      from: process.env.TWILIO_WHATSAPP_SANDBOX_NUMBER,
-      to: `whatsapp:${newPhone}`,
-    });
+    await sendWhatsAppOTP(newPhone, code);
 
     return res.json({ message: "Verification code sent via WhatsApp" });
   } catch (err) {
-    console.error("Twilio WhatsApp error:", err);
+    console.error("WhatsApp send failed:", err?.code, err?.message);
     return res.status(500).json({ message: "Failed to send WhatsApp OTP" });
   }
 };

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { transporter } from "../utils/mailer.js";
+import { sendMail } from "../services/mailer.js";
 import Citizen from "../models/patientModel.js";
 import HCP from "../models/hcpModel.js";
 import Hospital from "../models/hospitalModel.js";
@@ -48,8 +48,7 @@ export async function forgotPassword(req, res) {
   await user.save();
 
   const resetUrl = buildResetUrl(role, token);
-  await transporter.sendMail({
-    from: `"EVRS Support" <no-reply@evrs.gov>`,
+  await sendMail({
     to: user.email,
     subject: "Password Reset Request",
     html: `<p>We received a request to reset your password. Click <a href="${resetUrl}">here</a> to choose a new one. This link expires in one hour.</p>`,
