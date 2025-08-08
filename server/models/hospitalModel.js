@@ -45,6 +45,10 @@ const hospitalSchema = new mongoose.Schema(
       code: pendingSub.code,
       expires: pendingSub.expires,
     },
+    resetPassword: {
+      token: { type: String },
+      expires: { type: Date },
+    },
     recordedBy: {
       id: { type: String, required: true },
       role: {

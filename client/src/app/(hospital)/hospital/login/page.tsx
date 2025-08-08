@@ -121,6 +121,15 @@ export default function HospitalLogin() {
               )}
             </Button>
           </form>
+          <div className="text-center mt-4">
+            <Button
+              variant="link"
+              className="text-blue-600 text-sm"
+              onClick={() => router.push("/hospital/forgot-password")}
+            >
+              Forgot your password?
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

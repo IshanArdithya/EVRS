@@ -9,8 +9,14 @@ export function middleware(request: NextRequest) {
     "/",
     "/admin/login",
     "/moh/login",
+    "/moh/forgot-password",
+    "/moh/reset-password",
     "/healthcare-provider/login",
+    "/healthcare-provider/forgot-password",
+    "/healthcare-provider/reset-password",
     "/hospital/login",
+    "/hospital/forgot-password",
+    "/hospital/reset-password",
     "/login",
   ];
 

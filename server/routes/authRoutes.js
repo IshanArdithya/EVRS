@@ -13,6 +13,10 @@ import {
   loginAdmin,
   logoutAdmin,
 } from "../controllers/auth/adminAuthController.js";
+import {
+  forgotPassword,
+  resetPassword,
+} from "../controllers/authController.js";
 
 const router = express.Router();
 
@@ -30,5 +34,8 @@ router.post("/logout/hospital", logoutHospital);
 
 router.post("/login/moh", loginMOH);
 router.post("/logout/moh", logoutMOH);
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

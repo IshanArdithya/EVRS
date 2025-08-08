@@ -118,9 +118,9 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
                 </div>
@@ -141,7 +141,11 @@ export default function LoginPage() {
 
             <div className="mt-6 space-y-4">
               <div className="text-center">
-                <Button variant="link" className="text-primary-DEFAULT text-sm">
+                <Button
+                  variant="link"
+                  className="text-primary-DEFAULT text-sm"
+                  onClick={() => router.push("/forgot-password")}
+                >
                   Forgot your password?
                 </Button>
               </div>

@@ -117,6 +117,17 @@ export default function HealthcareProviderLogin() {
                 "Sign In"
               )}
             </Button>
+            <div className="text-center mt-4">
+              <Button
+                variant="link"
+                className="text-teal-600 text-sm"
+                onClick={() =>
+                  router.push("/healthcare-provider/forgot-password")
+                }
+              >
+                Forgot your password?
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

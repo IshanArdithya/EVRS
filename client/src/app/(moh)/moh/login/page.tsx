@@ -118,6 +118,15 @@ export default function MOHLogin() {
               )}
             </Button>
           </form>
+          <div className="text-center mt-4">
+            <Button
+              variant="link"
+              className="text-green-600 text-sm"
+              onClick={() => router.push("/moh/forgot-password")}
+            >
+              Forgot your password?
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

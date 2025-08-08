@@ -59,21 +59,22 @@ const patientSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-
     // otp for email
     pendingEmail: {
       address: pendingSub.address,
       code: pendingSub.code,
       expires: pendingSub.expires,
     },
-
     // otp for phone
     pendingPhone: {
       number: { type: String, default: "" },
       code: pendingSub.code,
       expires: pendingSub.expires,
     },
-
+    resetPassword: {
+      token: { type: String },
+      expires: { type: Date },
+    },
     // medical info
     bloodType: {
       type: String,
@@ -98,7 +99,6 @@ const patientSchema = new mongoose.Schema(
         default: "",
       },
     },
-
     recordedBy: {
       id: { type: String },
       role: {
