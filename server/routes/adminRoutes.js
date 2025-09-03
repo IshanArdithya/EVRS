@@ -47,6 +47,7 @@ import {
   getAdminProfile,
   getAllAdmins,
   registerAdmin,
+  getRisks,
 } from "../controllers/adminController.js";
 import { authenticateRole, authorize } from "../middleware/auth.js";
 
@@ -103,5 +104,7 @@ router.get("/vaccines", getAllVaccines);
 router.get("/vaccine/:vaccineId", getVaccineById);
 router.put("/vaccine/:vaccineId", updateVaccineById);
 router.delete("/vaccine/:vaccineId", deleteVaccineById);
+
+router.get("/risks", getRisks);
 
 export default router;

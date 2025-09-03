@@ -27,6 +27,7 @@ import {
   User,
   Building2,
   Users,
+  Flame,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useUser } from "@/context/UserContext";
@@ -67,6 +68,11 @@ const navigation = [
     name: "Manage Vaccines",
     href: "/admin/dashboard/manage-vaccines",
     icon: Plus,
+  },
+  {
+    name: "Risks",
+    href: "/admin/dashboard/manage-risks",
+    icon: Flame,
   },
   {
     name: "Profile",
