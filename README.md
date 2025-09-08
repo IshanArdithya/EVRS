@@ -79,7 +79,16 @@ python -m venv venv
 ```
 pip install -r requirements.txt
 ```
-4. Run the FastAPI server:
+4. Create a `.env` file with:
+```
+MODEL_PATH=./evrs_miss_next_model.pkl
+SCHEMA_PATH=./evrs_feature_schema.json
+HORIZON_DAYS=
+HIGH_THR=
+MED_THR=
+MONGO_URI=
+```
+5. Run the FastAPI server:
 ```
 uvicorn app:app --reload
 ```
