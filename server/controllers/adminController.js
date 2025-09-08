@@ -162,14 +162,13 @@ export const getRisks = async (req, res) => {
       });
     });
 
-    // build payload for FastAPI
     const payload = { mode: "latest", events: [] };
     for (const patient of patients) {
       const vaccinations = await VaccinationRecord.find({
         citizenId: patient.citizenId,
       })
         .sort({ createdAt: 1 })
-        .limit(4) // for now i only fetch 4 vaccinations, will change this in future
+        .limit(4)
         .lean();
 
       // map patient and vaccination data
@@ -202,7 +201,7 @@ export const getRisks = async (req, res) => {
     }
 
     // call FastAPI
-    const fastApiUrl = `${process.env.FAST_API_URL}/score/events`;
+    const fastApiUrl = `${process.env.FAST_API_URL}/score`;
     const response = await fetch(fastApiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -2,8 +2,12 @@ import bcrypt from "bcryptjs";
 import { sendMail } from "../services/mailer.js";
 import { sendWhatsAppOTP } from "../services/twilio.js";
 import HealthcareProvider from "../models/hcpModel.js";
+import VaccinationRecord from "../models/vaccinationModel.js";
 
-// ----- Profile Settings Section -----
+function generateVaccinationId() {
+  const digits = Math.floor(1000000000 + Math.random() * 9000000000);
+  return `VR${digits}`;
+}
 
 function genCode() {
   return ("" + Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
