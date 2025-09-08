@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   UserPlus,
-  FileUser,
+  CircleUser as FileUser,
   Syringe,
   Activity,
   TrendingUp,
@@ -20,6 +20,10 @@ import {
   Hospital,
 } from "lucide-react";
 import Link from "next/link";
+import { CitizenRegistrationsChart } from "@/components/charts/citizen-registrations-chart";
+import { CitizenRegistrationsByProvinceChart } from "@/components/charts/citizen-registrations-by-province-chart";
+import { VaccinationRecordsChart } from "@/components/charts/vaccination-records-chart";
+import { YearlyRegistrationsChart } from "@/components/charts/yearly-registrations-chart";
 
 export default function AdminDashboard() {
   const stats = [
@@ -129,7 +133,6 @@ export default function AdminDashboard() {
     <AdminDashboardLayout>
       <div className="space-y-6">
         {/* header */}
-
         <div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -167,6 +170,33 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* data visualization charts section */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Data Analytics
+            </h2>
+            <p className="text-gray-600">
+              Comprehensive data visualizations and trends analysis
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <CitizenRegistrationsChart />
+            </div>
+            <div className="lg:col-span-1">
+              <YearlyRegistrationsChart />
+            </div>
+          </div>
+
+          {/* Charts grid for province and vaccination data */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <CitizenRegistrationsByProvinceChart />
+            <VaccinationRecordsChart />
+          </div>
         </div>
 
         {/* quick actions */}
