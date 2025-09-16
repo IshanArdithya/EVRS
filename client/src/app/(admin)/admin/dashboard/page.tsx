@@ -24,38 +24,41 @@ import { CitizenRegistrationsChart } from "@/components/charts/citizen-registrat
 import { CitizenRegistrationsByProvinceChart } from "@/components/charts/citizen-registrations-by-province-chart";
 import { VaccinationRecordsChart } from "@/components/charts/vaccination-records-chart";
 import { YearlyRegistrationsChart } from "@/components/charts/yearly-registrations-chart";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 export default function AdminDashboard() {
-  const stats = [
-    {
-      title: "Total Hospitals",
-      value: "45",
-      change: "+3",
-      icon: Building2,
-      color: "text-blue-600",
-    },
-    {
-      title: "Healthcare Providers",
-      value: "1,234",
-      change: "+5%",
-      icon: UserPlus,
-      color: "text-green-600",
-    },
-    {
-      title: "Citizens",
-      value: "12,543",
-      change: "+12%",
-      icon: FileUser,
-      color: "text-purple-600",
-    },
-    {
-      title: "Vaccination Records",
-      value: "45,678",
-      change: "+18%",
-      icon: Syringe,
-      color: "text-orange-600",
-    },
-  ];
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const iconMap = {
+    Building2,
+    UserPlus,
+    FileUser,
+    Syringe,
+  };
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get("/admin/stats");
+        const data = response.data;
+
+        const mappedStats = data.map((stat) => ({
+          ...stat,
+          icon: iconMap[stat.icon],
+        }));
+        setStats(mappedStats);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch stats");
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const quickActions = [
     {
@@ -172,33 +175,6 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* data visualization charts section */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Data Analytics
-            </h2>
-            <p className="text-gray-600">
-              Comprehensive data visualizations and trends analysis
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <CitizenRegistrationsChart />
-            </div>
-            <div className="lg:col-span-1">
-              <YearlyRegistrationsChart />
-            </div>
-          </div>
-
-          {/* Charts grid for province and vaccination data */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <CitizenRegistrationsByProvinceChart />
-            <VaccinationRecordsChart />
-          </div>
-        </div>
-
         {/* quick actions */}
         <Card>
           <CardHeader>
@@ -236,8 +212,35 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* data visualization charts section */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Data Analytics
+            </h2>
+            <p className="text-gray-600">
+              Comprehensive data visualizations and trends analysis
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <CitizenRegistrationsChart />
+            </div>
+            <div className="lg:col-span-1">
+              <YearlyRegistrationsChart />
+            </div>
+          </div>
+
+          {/* Charts grid for province and vaccination data */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <CitizenRegistrationsByProvinceChart />
+            <VaccinationRecordsChart />
+          </div>
+        </div>
+
         {/* recent activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -312,7 +315,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
       </div>
     </AdminDashboardLayout>
   );

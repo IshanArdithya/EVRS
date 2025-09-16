@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import {
   Card,
   CardContent,
@@ -14,22 +14,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-
-const generateYearlyData = () => {
-  const data = [];
-  const currentYear = new Date().getFullYear();
-
-  for (let i = 4; i >= 0; i--) {
-    const year = currentYear - i;
-    const totalRegistrations = Math.floor(Math.random() * 8000) + 7000; // Random between 3000-11000
-
-    data.push({
-      year: year.toString(),
-      registrations: totalRegistrations,
-    });
-  }
-  return data;
-};
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 const chartConfig = {
   registrations: {
@@ -39,7 +25,47 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function YearlyRegistrationsChart() {
-  const data = generateYearlyData();
+  const [data, setData] = useState<{ year: string; registrations: number }[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get("/admin/yearly-registrations");
+        const apiData = response.data;
+
+        const transformedData = apiData.map(
+          (item: { label: string; value: number }) => ({
+            year: item.label,
+            registrations: item.value,
+          })
+        );
+        setData(transformedData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch yearly registrations");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading)
+    return (
+      <Card>
+        <CardContent>Loading...</CardContent>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card>
+        <CardContent className="text-red-600">Error: {error}</CardContent>
+      </Card>
+    );
 
   return (
     <Card className="w-full">
