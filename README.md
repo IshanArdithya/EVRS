@@ -86,7 +86,6 @@ SCHEMA_PATH=./evrs_feature_schema.json
 HORIZON_DAYS=
 HIGH_THR=
 MED_THR=
-MONGO_URI=
 ```
 5. Run the FastAPI server:
 ```
