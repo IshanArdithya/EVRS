@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -17,15 +17,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Button } from "@/components/ui/button";
-import { CalendarDays } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, endOfMonth } from "date-fns";
+import api from "@/lib/api";
 
 const provinces = [
   "Western",
@@ -39,25 +32,57 @@ const provinces = [
   "Sabaragamuwa",
 ];
 
-const generateProvinceData = (endDate: Date) => {
-  return provinces.map((province) => ({
-    province,
-    registrations: Math.floor(Math.random() * 2000) + 500,
-  }));
-};
-
 export function CitizenRegistrationsByProvinceChart() {
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [data, setData] = useState<
+    { province: string; registrations: number }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const data = generateProvinceData(endDate);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const formattedEndDate = format(endDate, "yyyy-MM");
+        const response = await api.get(
+          `/admin/registrations-by-province?endDate=${formattedEndDate}`
+        );
+        const apiData = response.data;
+        const transformedData = provinces.map((province) => {
+          const record = apiData.find(
+            (item: { label: string }) => item.label === province
+          ) || {
+            label: province,
+            value: 0,
+          };
+          return {
+            province: record.label,
+            registrations: record.value,
+          };
+        });
+        setData(transformedData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch registrations by province");
+        setLoading(false);
+      }
+    };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setEndDate(endOfMonth(date));
-      setIsCalendarOpen(false);
-    }
-  };
+    fetchData();
+  }, [endDate]);
+
+  if (loading)
+    return (
+      <Card className="w-full">
+        <CardContent>Loading...</CardContent>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card className="w-full">
+        <CardContent className="text-red-600">Error: {error}</CardContent>
+      </Card>
+    );
 
   return (
     <Card className="w-full">
@@ -68,26 +93,6 @@ export function CitizenRegistrationsByProvinceChart() {
             Total citizen registrations by province (Last 12 months)
           </CardDescription>
         </div>
-        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 bg-transparent"
-            >
-              <CalendarDays className="h-4 w-4" />
-              {format(endDate, "MMM yyyy")}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <CalendarComponent
-              mode="single"
-              selected={endDate}
-              onSelect={handleDateSelect}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
       </CardHeader>
       <CardContent>
         <ChartContainer
@@ -102,7 +107,7 @@ export function CitizenRegistrationsByProvinceChart() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+              margin={{ top: 5, right: 30, left: 20, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis

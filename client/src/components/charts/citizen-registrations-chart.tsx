@@ -16,27 +16,57 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { format, subMonths } from "date-fns";
-
-const generateMockData = () => {
-  const data = [];
-  const endDate = new Date();
-  for (let i = 23; i >= 0; i--) {
-    const date = subMonths(endDate, i);
-    const monthName = format(date, "MMM yyyy");
-    const registrations = Math.floor(Math.random() * 500) + 200;
-
-    data.push({
-      month: monthName,
-      registrations,
-      date: format(date, "yyyy-MM"),
-    });
-  }
-  return data;
-};
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 export function CitizenRegistrationsChart() {
-  const data = generateMockData();
+  const [data, setData] = useState<
+    { month: string; registrations: number; date: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get("/admin/citizen-registrations");
+        const apiData = response.data;
+
+        const transformedData = apiData.map(
+          (item: { label: string; value: number }) => {
+            const [month, year] = item.label.split("/").map(Number);
+            const date = new Date(year, month - 1);
+            return {
+              month: format(date, "MMM yyyy"),
+              registrations: item.value,
+              date: format(date, "yyyy-MM"),
+            };
+          }
+        );
+        setData(transformedData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch citizen registrations");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading)
+    return (
+      <Card>
+        <CardContent>Loading...</CardContent>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card>
+        <CardContent className="text-red-600">Error: {error}</CardContent>
+      </Card>
+    );
 
   return (
     <Card className="w-full">
@@ -54,12 +84,12 @@ export function CitizenRegistrationsChart() {
               color: "hsl(var(--chart-1))",
             },
           }}
-          className="h-[300px]"
+          className="w-full h-[300px]"
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis

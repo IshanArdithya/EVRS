@@ -47,6 +47,11 @@ import {
   getAdminProfile,
   getAllAdmins,
   registerAdmin,
+  getDashboardStats,
+  getCitizenRegistrations,
+  getYearlyRegistrations,
+  getRegistrationsByProvince,
+  getVaccinationRecordsByProvince,
   getRisks,
 } from "../controllers/adminController.js";
 import { authenticateRole, authorize } from "../middleware/auth.js";
@@ -104,6 +109,13 @@ router.get("/vaccines", getAllVaccines);
 router.get("/vaccine/:vaccineId", getVaccineById);
 router.put("/vaccine/:vaccineId", updateVaccineById);
 router.delete("/vaccine/:vaccineId", deleteVaccineById);
+
+// dashboard stats
+router.get("/stats", getDashboardStats);
+router.get("/citizen-registrations", getCitizenRegistrations);
+router.get("/yearly-registrations", getYearlyRegistrations);
+router.get("/registrations-by-province", getRegistrationsByProvince);
+router.get("/vaccination-records-by-province", getVaccinationRecordsByProvince);
 
 router.get("/risks", getRisks);
 

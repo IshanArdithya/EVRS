@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TrendingUp } from "lucide-react";
+import api from "@/lib/api";
 
 const provinces = [
   "Western",
@@ -39,33 +40,87 @@ const provinces = [
   "Sabaragamuwa",
 ];
 
-const generateVaccinationData = (
-  currentYear: number,
-  comparisonYear: number
-) => {
-  return provinces.map((province) => ({
-    province,
-    current: Math.floor(Math.random() * 5000) + 1000,
-    comparison: Math.floor(Math.random() * 4500) + 800,
-    currentYear,
-    comparisonYear,
-  }));
-};
-
 export function VaccinationRecordsChart() {
-  const [comparisonYear, setComparisonYear] = useState<string>("2023");
-
   const currentYear = new Date().getFullYear();
-  const data = generateVaccinationData(
-    currentYear,
-    Number.parseInt(comparisonYear)
+  const [comparisonYear, setComparisonYear] = useState<string>(
+    (currentYear - 1).toString()
   );
+  const [data, setData] = useState<
+    {
+      province: string;
+      current: number;
+      comparison: number;
+      currentYear: number;
+      comparisonYear: number;
+    }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const currentResponse = await api.get(
+          `/admin/vaccination-records-by-province?year=${currentYear}`
+        );
+        const comparisonResponse = await api.get(
+          `/admin/vaccination-records-by-province?year=${comparisonYear}`
+        );
+
+        const currentData = currentResponse.data;
+        const comparisonData = comparisonResponse.data;
+
+        const mergedData = provinces.map((province) => {
+          const current = currentData.find(
+            (item: { label: string }) => item.label === province
+          ) || {
+            label: province,
+            value: 0,
+          };
+          const comparison = comparisonData.find(
+            (item: { label: string }) => item.label === province
+          ) || {
+            label: province,
+            value: 0,
+          };
+          return {
+            province: province,
+            current: current.value,
+            comparison: comparison.value,
+            currentYear,
+            comparisonYear: Number(comparisonYear),
+          };
+        });
+
+        setData(mergedData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch vaccination records");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [comparisonYear, currentYear]);
 
   const yearOptions = [];
   for (let i = 1; i <= 5; i++) {
     const year = currentYear - i;
     yearOptions.push(year.toString());
   }
+
+  if (loading)
+    return (
+      <Card className="w-full">
+        <CardContent>Loading...</CardContent>
+      </Card>
+    );
+  if (error)
+    return (
+      <Card className="w-full">
+        <CardContent className="text-red-600">Error: {error}</CardContent>
+      </Card>
+    );
 
   return (
     <Card className="w-full">
@@ -106,7 +161,7 @@ export function VaccinationRecordsChart() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
