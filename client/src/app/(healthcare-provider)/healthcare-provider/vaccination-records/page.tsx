@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { HealthcareProviderLayout } from "@/app/(healthcare-provider)/healthcare-provider/components/healthcare-provider-layout";
 import {
   Card,
@@ -115,6 +115,8 @@ export default function HealthcareProviderDashboard() {
   const [isInitializingCamera, setIsInitializingCamera] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef<HTMLDivElement>(null);
+  const isRunningRef = useRef(false);
+  const currentCameraRef = useRef<string>("");
 
   useEffect(() => {
     if (!isAddDialogOpen) return;
@@ -124,41 +126,259 @@ export default function HealthcareProviderDashboard() {
       .catch((err) => console.error("Failed to load vaccines", err));
   }, [isAddDialogOpen]);
 
-  useEffect(() => {
-    if (!showScanner || !scannerRef.current) return;
-
-    let html5Qr: Html5Qrcode;
-    const initScanner = async () => {
+  // Load cameras once
+  const loadCameras = useCallback(async () => {
+    try {
       const cams = await Html5Qrcode.getCameras();
-      const camId = cams[0].id;
-      html5Qr = new Html5Qrcode(scannerRef.current!.id);
-      setScanner(html5Qr);
-      await html5Qr.start(
-        camId,
-        { fps: 10, qrbox: 250 },
-        (decoded) => {
-          setCitizenId(decoded);
-          html5Qr.stop().then(() => html5Qr.clear());
-          setShowScanner(false);
-        },
-        (err) => console.warn(err)
-      );
+      setCameras(cams);
+      if (cams.length > 0 && !selectedCamera) {
+        setSelectedCamera(cams[0].id);
+      }
+    } catch (err: any) {
+      console.error("Failed to load cameras:", err);
+      setScannerError("Failed to load cameras: " + (err.message || err));
+    }
+  }, [selectedCamera]);
+
+  // Switch camera effect - only trigger on selectedCamera change after init
+  useEffect(() => {
+    if (
+      !scanner ||
+      !isScanning ||
+      !showScanner ||
+      !selectedCamera ||
+      selectedCamera === currentCameraRef.current
+    ) {
+      return;
+    }
+
+    const switchCamera = async () => {
+      try {
+        setIsInitializingCamera(true);
+        setScannerError("");
+        if (isRunningRef.current) {
+          await scanner.stop();
+          isRunningRef.current = false;
+        }
+        await scanner.start(
+          selectedCamera,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            disableFlip: false,
+          },
+          onScanSuccess,
+          onScanFailure
+        );
+        isRunningRef.current = true;
+        currentCameraRef.current = selectedCamera;
+        setIsScanning(true);
+        setIsInitializingCamera(false);
+      } catch (err: any) {
+        console.error("Failed to switch camera:", err);
+        setIsInitializingCamera(false);
+        setScannerError(err.message || "Failed to switch camera.");
+        isRunningRef.current = false;
+      }
     };
 
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) {
-        ro.disconnect();
-        initScanner();
+    switchCamera();
+  }, [selectedCamera]); // Only depend on selectedCamera
+
+  const onScanSuccess = useCallback(
+    (decoded: string) => {
+      setCitizenId(decoded);
+      setIsScanning(false);
+      if (scanner && isRunningRef.current) {
+        scanner
+          .stop()
+          .then(() => {
+            isRunningRef.current = false;
+            scanner.clear();
+            setShowScanner(false);
+            loadCameras(); // Reload cameras after stop to reset
+          })
+          .catch(console.error);
       }
-    });
-    ro.observe(scannerRef.current);
+    },
+    [scanner, loadCameras]
+  );
+
+  const onScanFailure = useCallback((err: any) => {
+    // Ignore parse errors to prevent spam, but log others
+    if (err && typeof err === "string" && err.includes("getImageData")) {
+      return; // Ignore canvas width 0 errors
+    }
+    console.warn("Scan error:", err);
+  }, []);
+
+  // Main scanner init effect - depend only on showScanner
+  useEffect(() => {
+    if (!showScanner || !scannerRef.current) {
+      return () => {
+        // Cleanup on unmount or hide
+        if (scanner && isRunningRef.current) {
+          scanner.stop().catch(() => {});
+          isRunningRef.current = false;
+        }
+      };
+    }
+
+    setIsScanning(false);
+    setIsInitializingCamera(true);
+    setScannerError("");
+
+    const initScanner = async () => {
+      try {
+        await loadCameras();
+        if (cameras.length === 0) {
+          throw new Error("No cameras found on this device.");
+        }
+
+        // Use current selectedCamera (latest state)
+        const camId = selectedCamera || cameras[0].id;
+
+        const html5Qr = new Html5Qrcode(scannerRef.current!.id, {
+          // Add verbose logging for debug
+          verbose: false,
+        });
+        setScanner(html5Qr);
+
+        // Ensure container has size
+        const container = scannerRef.current;
+        if (container) {
+          container.style.minHeight = "320px";
+          container.style.minWidth = "100%";
+        }
+
+        await html5Qr.start(
+          camId,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            disableFlip: false,
+            // Remember last used camera
+            rememberLastUsedCamera: true,
+          },
+          onScanSuccess,
+          onScanFailure
+        );
+
+        isRunningRef.current = true;
+        currentCameraRef.current = camId;
+        setIsScanning(true);
+        setIsInitializingCamera(false);
+        setScannerError("");
+      } catch (err: any) {
+        console.error("Scanner init error:", err);
+        setIsScanning(false);
+        setIsInitializingCamera(false);
+        let errorMsg = err.message || "Failed to initialize scanner.";
+        if (
+          err.name === "NotAllowedError" ||
+          errorMsg.includes("Permission denied")
+        ) {
+          setCameraPermission("denied");
+          errorMsg =
+            "Camera permission denied. Please enable in browser settings.";
+        } else if (
+          err.name === "NotFoundError" ||
+          errorMsg.includes("NotFound")
+        ) {
+          errorMsg = "No cameras found. Please connect a camera device.";
+        }
+        setScannerError(errorMsg);
+        isRunningRef.current = false;
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initScanner, 100);
 
     return () => {
-      ro.disconnect();
-      scanner?.stop().catch(() => {});
+      clearTimeout(timeoutId);
+      if (scanner && isRunningRef.current) {
+        scanner.stop().catch(() => {});
+        isRunningRef.current = false;
+      }
     };
-  }, [showScanner]);
+  }, [showScanner, loadCameras, onScanSuccess, onScanFailure]); // Removed selectedCamera from deps
+
+  const startQRScanner = useCallback(() => {
+    setCameraPermission("prompt");
+    setScannerError("");
+    setSelectedCamera(""); // Reset to trigger default
+    setShowScanner(true);
+  }, []);
+
+  const stopQRScanner = useCallback(() => {
+    setIsScanning(false);
+    setShowScanner(false);
+    if (scanner && isRunningRef.current) {
+      scanner
+        .stop()
+        .then(() => {
+          isRunningRef.current = false;
+          scanner.clear().catch(() => {}); // Clear even if error
+        })
+        .catch((err) => {
+          console.error("Stop error:", err);
+          // Force clear
+          const container = scannerRef.current;
+          if (container) {
+            container.innerHTML = "";
+          }
+        });
+      setScanner(null);
+    }
+  }, [scanner]);
+
+  const restartScanner = useCallback(() => {
+    setScannerError("");
+    stopQRScanner();
+    setTimeout(startQRScanner, 500); // Longer delay to reset
+  }, [stopQRScanner, startQRScanner]);
+
+  const requestCameraPermission = useCallback(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(() => {
+          toast({
+            title: "Permission Granted",
+            description: "Camera access enabled.",
+          });
+          setCameraPermission("granted");
+          restartScanner();
+        })
+        .catch((err: any) => {
+          console.error("Permission error:", err);
+          if (err.name === "NotAllowedError") {
+            setCameraPermission("denied");
+            toast({
+              title: "Permission Denied",
+              description:
+                "Please enable camera access in your browser settings and refresh the page.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Camera Error",
+              description: err.message || "Failed to access camera.",
+              variant: "destructive",
+            });
+          }
+        });
+    } else {
+      toast({
+        title: "Camera Not Supported",
+        description: "Your browser does not support camera access.",
+        variant: "destructive",
+      });
+    }
+  }, [toast, restartScanner]);
 
   if (loading) {
     return (
@@ -175,20 +395,6 @@ export default function HealthcareProviderDashboard() {
       </HealthcareProviderLayout>
     );
   }
-
-  const startQRScanner = () => {
-    setShowScanner(true);
-  };
-
-  const stopQRScanner = () => {
-    if (scanner) {
-      scanner
-        .stop()
-        .then(() => scanner.clear())
-        .catch(console.error);
-    }
-    setShowScanner(false);
-  };
 
   const searchCitizenById = async (id: string) => {
     setIsSearching(true);
@@ -384,7 +590,7 @@ export default function HealthcareProviderDashboard() {
                 <div className="flex items-end gap-2">
                   <Button
                     onClick={handleSearchCitizen}
-                    disabled={isSearching || isScanning || isInitializingCamera}
+                    disabled={isSearching || showScanner}
                     className="bg-primary hover:bg-primary/90"
                   >
                     {isSearching ? (
@@ -400,11 +606,11 @@ export default function HealthcareProviderDashboard() {
                     )}
                   </Button>
                   <Button
-                    onClick={isScanning ? stopQRScanner : startQRScanner}
-                    variant={isScanning ? "destructive" : "outline"}
+                    onClick={showScanner ? stopQRScanner : startQRScanner}
+                    variant={showScanner ? "destructive" : "outline"}
                     disabled={isSearching}
                   >
-                    {isScanning ? (
+                    {showScanner ? (
                       <>
                         <CameraOff className="mr-2 h-4 w-4" />
                         Stop Scan
@@ -484,27 +690,28 @@ export default function HealthcareProviderDashboard() {
                             <SelectContent>
                               {cameras.map((camera) => (
                                 <SelectItem key={camera.id} value={camera.id}>
-                                  {camera.label || `Camera ${camera.id}`}
+                                  {camera.label ||
+                                    `Camera ${camera.id.substring(0, 8)}...`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={restartScanner}
+                          >
                             <RotateCcw className="w-4 h-4" />
                           </Button>
                         </div>
                       )}
 
                       {/* scanner container */}
-                      <div className="relative">
+                      <div className="relative" style={{ minHeight: "320px" }}>
                         <div
                           ref={scannerRef}
                           id="qr-reader"
-                          className="mx-auto rounded-lg overflow-hidden"
-                          style={{
-                            width: "100%",
-                            height: "320px",
-                          }}
+                          className="mx-auto rounded-lg overflow-hidden w-full h-[320px]"
                         />
 
                         {scannerError && (
@@ -543,7 +750,7 @@ export default function HealthcareProviderDashboard() {
                           </div>
                         )}
 
-                        {isInitializingCamera && (
+                        {isInitializingCamera && !scannerError && (
                           <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
                             <div className="text-center space-y-3 p-4">
                               <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
@@ -561,7 +768,7 @@ export default function HealthcareProviderDashboard() {
                       </div>
 
                       {/* scanner instructs */}
-                      {isScanning && (
+                      {isScanning && !scannerError && (
                         <div className="text-center space-y-2">
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -631,7 +838,7 @@ export default function HealthcareProviderDashboard() {
         )}
 
         {/* add vaccination record button */}
-        {!citizenData && (
+        {!citizenData && !showScanner && (
           <Card>
             <CardContent className="py-8">
               <div className="text-center space-y-4">

@@ -87,3 +87,84 @@ export const getVaccinationsByCitizenId = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getStats = async (req, res) => {
+  try {
+    const today = new Date();
+    const currentMonthStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+
+    // patients stats
+    const totalPatients = await Patient.countDocuments();
+    const totalPatientsLastMonth = await Patient.countDocuments({
+      createdAt: { $lt: currentMonthStart },
+    });
+    const additionsPatients = totalPatients - totalPatientsLastMonth;
+    let growthPatients = 0;
+    if (totalPatientsLastMonth > 0) {
+      growthPatients = (additionsPatients / totalPatientsLastMonth) * 100;
+    } else if (additionsPatients > 0) {
+      growthPatients = 100;
+    }
+    const changePatients = `${
+      growthPatients >= 0 ? "+" : ""
+    }${growthPatients.toFixed(1)}%`;
+
+    // vaccines stats
+    const totalVaccines = await Vaccine.countDocuments();
+    const totalVaccinesLastMonth = await Vaccine.countDocuments({
+      createdAt: { $lt: currentMonthStart },
+    });
+    const additionsVaccines = totalVaccines - totalVaccinesLastMonth;
+    let growthVaccines = 0;
+    if (totalVaccinesLastMonth > 0) {
+      growthVaccines = (additionsVaccines / totalVaccinesLastMonth) * 100;
+    } else if (additionsVaccines > 0) {
+      growthVaccines = 100;
+    }
+    const changeVaccines = `${
+      growthVaccines >= 0 ? "+" : ""
+    }${growthVaccines.toFixed(1)}%`;
+
+    // vaccinations stats
+    const totalVaccinations = await VaccinationRecord.countDocuments();
+    const totalVaccinationsLastMonth = await VaccinationRecord.countDocuments({
+      createdAt: { $lt: currentMonthStart },
+    });
+    const additionsVaccinations =
+      totalVaccinations - totalVaccinationsLastMonth;
+    let growthVaccinations = 0;
+    if (totalVaccinationsLastMonth > 0) {
+      growthVaccinations =
+        (additionsVaccinations / totalVaccinationsLastMonth) * 100;
+    } else if (additionsVaccinations > 0) {
+      growthVaccinations = 100;
+    }
+    const changeVaccinations = `${
+      growthVaccinations >= 0 ? "+" : ""
+    }${growthVaccinations.toFixed(1)}%`;
+
+    const stats = [
+      {
+        value: totalPatients.toString(),
+        change: changePatients,
+      },
+      {
+        value: totalVaccines.toString(),
+        change: changeVaccines,
+      },
+      {
+        value: totalVaccinations.toString(),
+        change: changeVaccinations,
+      },
+    ];
+
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error("Get stats error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -14,27 +14,22 @@ import { Badge } from "@/components/ui/badge";
 import { HospitalLayout } from "@/app/(hospital)/hospital/components/hospital-layout";
 import { hospitalkeyfeatures, support } from "@/constants/system-information";
 import { hospitalQA } from "@/constants/quick-actions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreateNewbornDialog } from "../components/create-newborn-dialog";
 import { useUser } from "@/context/UserContext";
+import api from "@/lib/api";
 
-const stats = [
+const statMetadata = [
   {
-    title: "Total Citizens",
-    value: "1,234,567",
-    change: "+2.5%",
+    title: "Total Patients",
     icon: Users,
   },
   {
-    title: "Vaccinations Today",
-    value: "2,847",
-    change: "+12.3%",
+    title: "Total Vaccines",
     icon: Syringe,
   },
   {
-    title: "Active Vaccines",
-    value: "24",
-    change: "0%",
+    title: "Total Vaccinations",
     icon: FileText,
   },
 ];
@@ -42,6 +37,31 @@ const stats = [
 export default function HospitalPage() {
   const { hospital, loading } = useUser();
   const [createNewbornOpen, setCreateNewbornOpen] = useState(false);
+  const [stats, setStats] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get("/hcp/stats");
+        const data = response.data;
+
+        // Map backend data to include title and icon
+        const enrichedStats = data.map((stat: any, index: number) => ({
+          ...stat,
+          ...statMetadata[index],
+        }));
+
+        setStats(enrichedStats);
+      } catch (err) {
+        setError("Failed to fetch stats");
+        console.error(err);
+      } finally {
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   if (loading) {
     return (

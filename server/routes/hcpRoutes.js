@@ -11,6 +11,7 @@ import {
 import { authenticateRole, authorize } from "../middleware/auth.js";
 import {
   getAllVaccines,
+  getStats,
   getVaccinationsByCitizenId,
 } from "../controllers/sharedController.js";
 
@@ -21,6 +22,8 @@ router.use(authenticateRole("hcp"), authorize("hcp"));
 router.get("/vaccines", getAllVaccines);
 router.get("/vaccinations/:citizenId", getVaccinationsByCitizenId);
 router.post("/add-vaccination", addVaccination);
+
+router.get("/stats", getStats);
 
 router.get("/get/profile", getHCPProfile);
 router.post("/profile/email/request", requestEmailChange);
