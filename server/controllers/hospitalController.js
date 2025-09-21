@@ -1,8 +1,24 @@
 import bcrypt from "bcryptjs";
 import { sendWhatsAppOTP } from "../services/twilio.js";
 import Hospital from "../models/hospitalModel.js";
+import crypto from "crypto";
+import Patient from "../models/patientModel.js";
 
 // ----- Profile Settings Section -----
+
+function generateVaccinationId() {
+  const digits = Math.floor(1000000000 + Math.random() * 9000000000);
+  return `VR${digits}`;
+}
+
+function generateCitizenId() {
+  const digits = Math.floor(1000000000 + Math.random() * 9000000000);
+  return `C${digits}`;
+}
+
+function generateRandomPassword(length = 10) {
+  return crypto.randomBytes(length).toString("base64").slice(0, length);
+}
 
 function genCode() {
   return ("" + Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
